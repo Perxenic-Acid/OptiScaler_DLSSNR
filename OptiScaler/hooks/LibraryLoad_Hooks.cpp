@@ -54,6 +54,14 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
     auto path = std::filesystem::path(libName).lexically_normal();
     auto normalizedPath = path.wstring();
     to_lower_in_place(normalizedPath);
+    auto normalizedFileName = path.filename().wstring();
+    to_lower_in_place(normalizedFileName);
+
+    // The pre-NR add-on ships a private bridge named nrchain_nvngx.dll.
+    // The generic NGX test below intentionally uses suffix matching, which
+    // otherwise mistakes that bridge for _nvngx.dll and returns OptiScaler's
+    // own module. Let Windows load the exact private bridge instead.
+    const bool isNrChainPrivateBridge = normalizedFileName == L"nrchain_nvngx.dll";
 
     std::filesystem::path localSlPath(Config::Instance()->MainDllPath.value());
     localSlPath = localSlPath / L"streamline"; // Hardcoded streamline folder
@@ -69,7 +77,8 @@ HMODULE LibraryLoadHooks::LoadLibraryCheckW(std::wstring libName, LPCWSTR lpLibF
 
     auto pos = libName.rfind(exePath);
 
-    if (Config::Instance()->EnableDlssInputs.value_or_default() && CheckDllNameW(&libName, &nvngxNamesW) &&
+    if (!isNrChainPrivateBridge && Config::Instance()->EnableDlssInputs.value_or_default() &&
+        CheckDllNameW(&libName, &nvngxNamesW) &&
         (!Config::Instance()->HookOriginalNvngxOnly.value_or_default() || pos == std::string::npos))
     {
         LOG_INFO("nvngx call: {0}, returning this dll!", libNameA);

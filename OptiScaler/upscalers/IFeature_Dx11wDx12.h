@@ -4,6 +4,7 @@
 #include "IFeature_Dx12.h"
 
 #include <with_dx12/dx11_with_dx12.h>
+#include <shaders/format_transfer/FT_Dx12.h>
 
 #include <d3d12.h>
 #include <d3d11_4.h>
@@ -37,6 +38,15 @@ class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
     HANDLE Dx12FenceEvent = nullptr;
     UINT64 Dx12FenceValue = 0;
     UINT64 Dx12CommandAllocatorFenceValue[DX11WDX12_NUM_OF_BUFFERS] = {};
+
+    // Genshin's shared HDR color is R10G10B10A2. DLSS5 pre-NR accepts FP16
+    // or R11G11B10, so this pass promotes color before the NGX carrier call.
+    std::unique_ptr<FT_Dx12> PreNrColorTransfer = nullptr;
+
+    // The RTX30 NR addon accepts FP16 as an output contract in both chain
+    // orders. Keep DLSS/NR on this carrier when the game's shared output is
+    // typeless R8, then encode the completed result back into that output.
+    std::unique_ptr<FT_Dx12> DlssOutputTransfer = nullptr;
 
     Dx11WithDx12::D3D11_TEXTURE2D_RESOURCE_C dx11Color = {};
     Dx11WithDx12::D3D11_TEXTURE2D_RESOURCE_C dx11Mv = {};

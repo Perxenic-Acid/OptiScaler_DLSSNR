@@ -609,6 +609,9 @@ class Config
     CustomOptional<bool> HookOriginalNvngxOnly { false };
     CustomOptional<bool> EarlyHooking { false };
     CustomOptional<bool> UseNtdllHooks { true };
+    // Avoid patching COM vtables owned by another D3D11 proxy layer (GIMI).
+    // This leaves OptiScaler's upscaler entry points active.
+    CustomOptional<bool> SkipD3D11DeviceVTableHooks { false };
 
     // Upscale Ratio Override
     CustomOptional<bool> UpscaleRatioOverrideEnabled { false };

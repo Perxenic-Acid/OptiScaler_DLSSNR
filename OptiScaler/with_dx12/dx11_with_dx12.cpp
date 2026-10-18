@@ -38,6 +38,19 @@ Dx11WithDx12::D3D11_TEXTURE2D_DESC_C CaptureDesc(const D3D11_TEXTURE2D_DESC& des
     return result;
 }
 
+static DXGI_FORMAT ResolveSharedTextureFormat(DXGI_FORMAT sourceFormat, bool depth)
+{
+    // Genshin exposes its HDR color and output resources as
+    // R10G10B10A2_TYPELESS. A D3D12 resource cannot be sampled or used as a
+    // typed UAV through that base format, and the DLSS5 pre-NR carrier
+    // deliberately rejects it. The v1.1 bridge solved the same contract by
+    // sharing the compatible typed member of the format family.
+    if (!depth && sourceFormat == DXGI_FORMAT_R10G10B10A2_TYPELESS)
+        return DXGI_FORMAT_R10G10B10A2_UNORM;
+
+    return sourceFormat;
+}
+
 Dx11WithDx12::D3D11_UPSCALER_RESOURCE_CACHE_C& Dx11WithDx12::GetUpscalerResourceCache()
 {
     return UpscalerResourceCache;
@@ -395,6 +408,7 @@ bool Dx11WithDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTU
     if (!sourceHasLegacyShared && !sourceHasNTShared && !InDontUseNTShared)
     {
         D3D11_TEXTURE2D_DESC sharedDesc = sourceDesc;
+        sharedDesc.Format = ResolveSharedTextureFormat(sourceDesc.Format, InDepth);
         sharedDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
         sharedDesc.Usage = D3D11_USAGE_DEFAULT;
         sharedDesc.CPUAccessFlags = 0;
@@ -525,6 +539,7 @@ bool Dx11WithDx12::CopyTextureFrom11To12(ID3D11Resource* InResource, D3D11_TEXTU
         else
         {
             D3D11_TEXTURE2D_DESC sharedDesc = sourceDesc;
+            sharedDesc.Format = ResolveSharedTextureFormat(sourceDesc.Format, InDepth);
 
             if (sharedDesc.Format == DXGI_FORMAT_R24G8_TYPELESS)
                 sharedDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;

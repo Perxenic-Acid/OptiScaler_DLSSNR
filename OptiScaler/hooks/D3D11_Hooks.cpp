@@ -91,6 +91,12 @@ static void HookToDeviceLocal(ID3D11Device* InDevice)
     if (o_CreateSamplerState != nullptr || InDevice == nullptr)
         return;
 
+    if (Config::Instance()->SkipD3D11DeviceVTableHooks.value_or_default())
+    {
+        LOG_INFO("Skipping ID3D11Device vtable hooks by compatibility setting");
+        return;
+    }
+
     LOG_DEBUG("Dx11");
 
     // Get the vtable pointer

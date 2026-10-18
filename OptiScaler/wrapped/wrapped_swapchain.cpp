@@ -254,7 +254,9 @@ static HRESULT LocalPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
                 if (upscalerTimeOpt = currentFeature->ReadUpscalerTime(cq); upscalerTimeOpt.has_value())
                     currentFeature->ReadDetailedGpuTimes(cq, State::Instance().detailedGpuTimes);
             }
-            else if (device != nullptr)
+            // A private/bridged D3D12 feature can be process-wide current while
+            // this swap chain is D3D11. Never pass a D3D11 context to it.
+            else if (device != nullptr && currentFeature->Api() == API::DX11)
             {
                 ID3D11DeviceContext* context = nullptr;
                 device->GetImmediateContext(&context);
@@ -264,7 +266,8 @@ static HRESULT LocalPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 
                 context->Release();
             }
-            if (State::Instance().swapchainInteropApi == SwapchainInteropApi::Dx11wDx12 &&
+            if (currentFeature->Api() == API::DX11 &&
+                State::Instance().swapchainInteropApi == SwapchainInteropApi::Dx11wDx12 &&
                 State::Instance().currentD3D11Device != nullptr)
             {
                 ID3D11DeviceContext* context = nullptr;

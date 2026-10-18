@@ -11,6 +11,52 @@
 
 #include <with_dx12/with_dx12.h>
 
+namespace
+{
+// The RTX30 pre-NR addon uses this private D3D12-object contract to prove
+// that a command list belongs to a stable graphics queue before it allows a
+// Feature 18 dispatch.  The contract is intentionally kept local to the
+// bridge: it is not part of the public NGX ABI.
+static const GUID kDlssNrQueueAffinityGuid =
+    { 0x2f90ef4a, 0x3aa3, 0x4de5, { 0xb5, 0x27, 0x91, 0x52, 0x31, 0xe2, 0x8c, 0x6a } };
+
+struct DlssNrQueueAffinityMarker
+{
+    ID3D12CommandQueue* queue;
+    UINT32 version;
+    UINT32 flags;
+};
+
+static_assert(sizeof(DlssNrQueueAffinityMarker) == 0x10,
+              "The RTX30 pre-NR queue-affinity marker must remain 16 bytes");
+
+void SetDlssNrQueueAffinityMarker(ID3D12GraphicsCommandList* commandList, ID3D12CommandQueue* commandQueue)
+{
+    if (commandList == nullptr || commandQueue == nullptr)
+        return;
+
+    DlssNrQueueAffinityMarker marker = { commandQueue, 2u, 0u };
+    const HRESULT result = commandList->SetPrivateData(kDlssNrQueueAffinityGuid, sizeof(marker), &marker);
+
+    static bool reportedSuccess = false;
+    static bool reportedFailure = false;
+    if (SUCCEEDED(result))
+    {
+        if (!reportedSuccess)
+        {
+            reportedSuccess = true;
+            LOG_INFO("DLSS-NR queue-affinity marker installed on bridge command list (queue={}, version=2)",
+                     static_cast<void*>(commandQueue));
+        }
+    }
+    else if (!reportedFailure)
+    {
+        reportedFailure = true;
+        LOG_WARN("DLSS-NR queue-affinity marker SetPrivateData failed: {:X}", static_cast<UINT>(result));
+    }
+}
+} // namespace
+
 void IFeature_Dx11wDx12::ResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource,
                                          D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 {
@@ -56,6 +102,7 @@ bool IFeature_Dx11wDx12::CreateD3D12Objects()
                 return false;
             }
 
+            SetDlssNrQueueAffinityMarker(Dx12CommandList[i], Dx12CommandQueue);
             Dx12CommandList[i]->Close();
         }
     }
@@ -190,6 +237,11 @@ bool IFeature_Dx11wDx12::ProcessDx11Textures(const NVSDK_NGX_Parameter* InParame
         return false;
     }
 
+    // Some D3D12 layers recreate or clear object metadata during Reset.  Set
+    // the marker again while the list is open so the addon sees the current
+    // queue-affinity proof on every frame.
+    SetDlssNrQueueAffinityMarker(Dx12CommandList[frame], Dx12CommandQueue);
+
     LOG_DEBUG("Shared handles prepared and synchronized by Dx11WithDx12 cache, frameKey: {}", cacheFrameKey);
     return true;
 }
@@ -253,6 +305,8 @@ bool IFeature_Dx11wDx12::Init(ID3D11Device* InDevice, ID3D11DeviceContext* InCon
 
     if (prep != S_OK)
         LOG_WARN("Init: command list reset before feature creation failed: {:X}", (UINT) prep);
+
+    SetDlssNrQueueAffinityMarker(Dx12CommandList[0], Dx12CommandQueue);
 
     const bool initialised = dx12Feature->Init(_dx11on12Device, Dx12CommandList[0], InParameters);
 
@@ -347,12 +401,47 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
         return *outResource != nullptr;
     };
 
+    // Native D3D12 NGX keeps the typed D3D12 resource slot separate from its
+    // untyped/legacy pointer slot.  The old bridge wrote only Set(void*), so
+    // a native parameter table continued to expose the game's packed R11
+    // resource to the pre-NR observer even after we had prepared a FP16
+    // carrier.  Always save and restore both views, and write both views for
+    // the bridge hand-off below.
+    auto getOriginalD3D12Resource = [](NVSDK_NGX_Parameter* parameters, const char* name,
+                                       ID3D12Resource** outResource)
+    {
+        if (parameters == nullptr || name == nullptr || outResource == nullptr)
+            return false;
+
+        *outResource = nullptr;
+        return parameters->Get(name, outResource) == NVSDK_NGX_Result_Success && *outResource != nullptr;
+    };
+
+    auto setBridgeD3D12Resource = [](NVSDK_NGX_Parameter* parameters, const char* name, ID3D12Resource* resource)
+    {
+        if (parameters == nullptr || name == nullptr)
+            return;
+
+        // Typed first is important for the native D3D12 table.  The untyped
+        // write keeps compatibility with OptiScaler's internal table and
+        // with older NGX consumers that read the legacy pointer slot.
+        parameters->Set(name, resource);
+        parameters->Set(name, static_cast<void*>(resource));
+    };
+
     ID3D11Resource* restoreParamColor = nullptr;
     ID3D11Resource* restoreParamMv = nullptr;
     ID3D11Resource* restoreParamOutput = nullptr;
     ID3D11Resource* restoreParamDepth = nullptr;
     ID3D11Resource* restoreParamExposure = nullptr;
     ID3D11Resource* restoreParamReactive = nullptr;
+
+    ID3D12Resource* restoreParamColor12 = nullptr;
+    ID3D12Resource* restoreParamMv12 = nullptr;
+    ID3D12Resource* restoreParamOutput12 = nullptr;
+    ID3D12Resource* restoreParamDepth12 = nullptr;
+    ID3D12Resource* restoreParamExposure12 = nullptr;
+    ID3D12Resource* restoreParamReactive12 = nullptr;
 
     const bool hasRestoreParamColor =
         getOriginalNgxResource(InParameters, NVSDK_NGX_Parameter_Color, &restoreParamColor);
@@ -366,6 +455,19 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
         getOriginalNgxResource(InParameters, NVSDK_NGX_Parameter_ExposureTexture, &restoreParamExposure);
     const bool hasRestoreParamReactive = getOriginalNgxResource(
         InParameters, NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &restoreParamReactive);
+
+    const bool hasRestoreParamColor12 =
+        getOriginalD3D12Resource(InParameters, NVSDK_NGX_Parameter_Color, &restoreParamColor12);
+    const bool hasRestoreParamMv12 =
+        getOriginalD3D12Resource(InParameters, NVSDK_NGX_Parameter_MotionVectors, &restoreParamMv12);
+    const bool hasRestoreParamOutput12 =
+        getOriginalD3D12Resource(InParameters, NVSDK_NGX_Parameter_Output, &restoreParamOutput12);
+    const bool hasRestoreParamDepth12 =
+        getOriginalD3D12Resource(InParameters, NVSDK_NGX_Parameter_Depth, &restoreParamDepth12);
+    const bool hasRestoreParamExposure12 =
+        getOriginalD3D12Resource(InParameters, NVSDK_NGX_Parameter_ExposureTexture, &restoreParamExposure12);
+    const bool hasRestoreParamReactive12 = getOriginalD3D12Resource(
+        InParameters, NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &restoreParamReactive12);
 
     ID3D11ShaderResourceView* restoreSRVs[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = {};
     ID3D11SamplerState* restoreSamplerStates[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT] = {};
@@ -444,17 +546,135 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
 
         commandListRecording = true;
 
-        InParameters->Set(NVSDK_NGX_Parameter_Color, (void*) dx11Color.Dx12Resource);
-        InParameters->Set(NVSDK_NGX_Parameter_MotionVectors, (void*) dx11Mv.Dx12Resource);
-        InParameters->Set(NVSDK_NGX_Parameter_Output, (void*) dx11Out.Dx12Resource);
-        InParameters->Set(NVSDK_NGX_Parameter_Depth, (void*) dx11Depth.Dx12Resource);
+        ID3D12Resource* carrierColor = dx11Color.Dx12Resource;
+        const auto carrierColorDesc = carrierColor->GetDesc();
+
+        // The interop texture may retain a packed or typeless scene-color
+        // format (the current Genshin path reports R8G8B8A8_TYPELESS, enum
+        // value 27; older paths used R10/R11).  The RTX30 DLSS-NR model
+        // accepts a four-channel FP16 carrier, while native DLSS SR can still
+        // consume the original packed resource.  Promote every ambiguous
+        // packed form before the observer sees Feature 1; in particular this
+        // turns the otherwise rejected typeless R8 contract into FP16.
+        const bool packedHdrColor = carrierColorDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS ||
+                                    carrierColorDesc.Format == DXGI_FORMAT_R11G11B10_FLOAT ||
+                                    carrierColorDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM ||
+                                    carrierColorDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS;
+
+        if (packedHdrColor)
+        {
+            if (PreNrColorTransfer == nullptr)
+            {
+                PreNrColorTransfer = std::make_unique<FT_Dx12>("Genshin pre-NR FP16 color transfer",
+                                                               _dx11on12Device,
+                                                               DXGI_FORMAT_R16G16B16A16_FLOAT);
+            }
+
+            if (!PreNrColorTransfer->IsInit() ||
+                !PreNrColorTransfer->CreateBufferResource(_dx11on12Device, carrierColor,
+                                                           D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+            {
+                LOG_ERROR("Pre-NR FP16 color resource creation failed");
+                break;
+            }
+
+            PreNrColorTransfer->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+            if (!PreNrColorTransfer->Dispatch(cmdList, carrierColor, PreNrColorTransfer->Buffer()))
+            {
+                LOG_ERROR("Pre-NR R10-to-FP16 color transfer failed");
+                break;
+            }
+
+            PreNrColorTransfer->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            carrierColor = PreNrColorTransfer->Buffer();
+
+            static bool reportedPreNrColorTransfer = false;
+            if (!reportedPreNrColorTransfer)
+            {
+                reportedPreNrColorTransfer = true;
+                LOG_INFO("Pre-NR carrier color promoted from packed HDR format {} to R16G16B16A16_FLOAT",
+                         static_cast<int>(carrierColorDesc.Format));
+            }
+        }
+
+        ID3D12Resource* carrierOutput = dx11Out.Dx12Resource;
+        const auto gameOutputDesc = carrierOutput->GetDesc();
+        const bool useFp16OutputCarrier = gameOutputDesc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS ||
+                                          gameOutputDesc.Format == DXGI_FORMAT_R8G8B8A8_UNORM ||
+                                          gameOutputDesc.Format == DXGI_FORMAT_R11G11B10_FLOAT ||
+                                          gameOutputDesc.Format == DXGI_FORMAT_R10G10B10A2_UNORM ||
+                                          gameOutputDesc.Format == DXGI_FORMAT_R10G10B10A2_TYPELESS;
+
+        if (useFp16OutputCarrier)
+        {
+            if (DlssOutputTransfer == nullptr)
+            {
+                DlssOutputTransfer = std::make_unique<FT_Dx12>("Genshin DLSS/NR FP16 output carrier",
+                                                               _dx11on12Device,
+                                                               DXGI_FORMAT_R16G16B16A16_FLOAT);
+            }
+
+            const auto carrierMatchesOutput = [&]()
+            {
+                if (!DlssOutputTransfer->CanRender())
+                    return false;
+
+                const auto carrierDesc = DlssOutputTransfer->Buffer()->GetDesc();
+                return carrierDesc.Width == gameOutputDesc.Width && carrierDesc.Height == gameOutputDesc.Height &&
+                       carrierDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT;
+            }();
+
+            if (!DlssOutputTransfer->IsInit() ||
+                (!carrierMatchesOutput &&
+                 !DlssOutputTransfer->CreateBufferResource(_dx11on12Device, carrierOutput,
+                                                            D3D12_RESOURCE_STATE_UNORDERED_ACCESS)))
+            {
+                LOG_ERROR("DLSS/NR FP16 output carrier creation failed");
+                break;
+            }
+
+            DlssOutputTransfer->SetBufferState(cmdList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            carrierOutput = DlssOutputTransfer->Buffer();
+
+            static bool reportedFp16OutputCarrier = false;
+            if (!reportedFp16OutputCarrier)
+            {
+                reportedFp16OutputCarrier = true;
+                LOG_INFO("DLSS/NR output redirected from format {} to R16G16B16A16_FLOAT; completed output will be "
+                         "encoded back before D3D11 copy-back",
+                         static_cast<int>(gameOutputDesc.Format));
+            }
+        }
+
+        setBridgeD3D12Resource(InParameters, NVSDK_NGX_Parameter_Color, carrierColor);
+        setBridgeD3D12Resource(InParameters, NVSDK_NGX_Parameter_MotionVectors, dx11Mv.Dx12Resource);
+        setBridgeD3D12Resource(InParameters, NVSDK_NGX_Parameter_Output, carrierOutput);
+        setBridgeD3D12Resource(InParameters, NVSDK_NGX_Parameter_Depth, dx11Depth.Dx12Resource);
 
         if (!AutoExposure() && dx11Exp.Dx12Resource != nullptr)
-            InParameters->Set(NVSDK_NGX_Parameter_ExposureTexture, (void*) dx11Exp.Dx12Resource);
+            setBridgeD3D12Resource(InParameters, NVSDK_NGX_Parameter_ExposureTexture, dx11Exp.Dx12Resource);
 
         if (!Config::Instance()->DisableReactiveMask.value_or(false) && dx11Reactive.Dx12Resource != nullptr)
-            InParameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask,
-                              (void*) dx11Reactive.Dx12Resource);
+            setBridgeD3D12Resource(InParameters, NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask,
+                                   dx11Reactive.Dx12Resource);
+
+        static bool reportedBridgeResourceFormats = false;
+        if (!reportedBridgeResourceFormats)
+        {
+            reportedBridgeResourceFormats = true;
+            const auto observedColor = [&]() -> ID3D12Resource*
+            {
+                ID3D12Resource* value = nullptr;
+                InParameters->Get(NVSDK_NGX_Parameter_Color, &value);
+                return value;
+            }();
+            LOG_INFO("D3D11 bridge carrier resources: sourceFmt={} carrierFmt={} outputFmt={} typedColor={:p}",
+                     static_cast<int>(carrierColorDesc.Format),
+                     carrierColor == nullptr ? -1 : static_cast<int>(carrierColor->GetDesc().Format),
+                     carrierOutput == nullptr ? -1 : static_cast<int>(carrierOutput->GetDesc().Format),
+                     static_cast<void*>(observedColor));
+        }
 
         LOG_DEBUG("Dispatch!!");
         dx12EvalResult = dx12Feature->Evaluate(cmdList, InParameters);
@@ -484,7 +704,49 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
             DlssNr::ProbeD3D11(Dx11Device);
         }
 
+        if (dx12EvalResult && useFp16OutputCarrier)
+        {
+            // The old RTX30 addon can execute either NR -> SR or SR -> NR on
+            // this FP16 output. Preserve the exact result by writing it to the
+            // game's typeless R8 resource only after the selected chain has
+            // completed. The UNORM UAV view is the same numeric contract that
+            // native DLSS used when it wrote this resource directly.
+            DlssOutputTransfer->SetBufferState(cmdList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            ResourceBarrier(cmdList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_COMMON,
+                            D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+            const bool outputTransferSucceeded =
+                DlssOutputTransfer->Dispatch(cmdList, carrierOutput, dx11Out.Dx12Resource);
+
+            ResourceBarrier(cmdList, dx11Out.Dx12Resource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+                            D3D12_RESOURCE_STATE_COMMON);
+            DlssOutputTransfer->SetBufferState(cmdList, D3D12_RESOURCE_STATE_COMMON);
+
+            if (!outputTransferSucceeded)
+            {
+                LOG_ERROR("DLSS/NR FP16 output encoding failed");
+                dx12EvalResult = false;
+                break;
+            }
+        }
+
     } while (false);
+
+    // Clear/update the typed D3D12 slots first, then restore the original
+    // D3D11/legacy slots.  This prevents a promoted carrier from remaining in
+    // a native table after the call and leaking into the next frame.
+    InParameters->Set(NVSDK_NGX_Parameter_Color,
+                      hasRestoreParamColor12 ? restoreParamColor12 : static_cast<ID3D12Resource*>(nullptr));
+    InParameters->Set(NVSDK_NGX_Parameter_MotionVectors,
+                      hasRestoreParamMv12 ? restoreParamMv12 : static_cast<ID3D12Resource*>(nullptr));
+    InParameters->Set(NVSDK_NGX_Parameter_Output,
+                      hasRestoreParamOutput12 ? restoreParamOutput12 : static_cast<ID3D12Resource*>(nullptr));
+    InParameters->Set(NVSDK_NGX_Parameter_Depth,
+                      hasRestoreParamDepth12 ? restoreParamDepth12 : static_cast<ID3D12Resource*>(nullptr));
+    InParameters->Set(NVSDK_NGX_Parameter_ExposureTexture,
+                      hasRestoreParamExposure12 ? restoreParamExposure12 : static_cast<ID3D12Resource*>(nullptr));
+    InParameters->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask,
+                      hasRestoreParamReactive12 ? restoreParamReactive12 : static_cast<ID3D12Resource*>(nullptr));
 
     if (hasRestoreParamColor)
         InParameters->Set(NVSDK_NGX_Parameter_Color, (void*) restoreParamColor);

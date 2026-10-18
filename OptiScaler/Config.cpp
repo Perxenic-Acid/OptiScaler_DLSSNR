@@ -558,6 +558,8 @@ bool Config::Reload(std::filesystem::path iniPath)
             HookOriginalNvngxOnly.set_from_config(readBool("Hooks", "HookOriginalNvngxOnly"));
             EarlyHooking.set_from_config(readBool("Hooks", "EarlyHooking"));
             UseNtdllHooks.set_from_config(readBool("Hooks", "UseNtdllHooks"));
+            SkipD3D11DeviceVTableHooks.set_from_config(
+                readBool("Hooks", "SkipD3D11DeviceVTableHooks"));
         }
 
         // RCAS
@@ -1417,6 +1419,8 @@ bool Config::SaveIni()
                      GetBoolValue(Instance()->HookOriginalNvngxOnly.value_for_config()).c_str());
         ini.SetValue("Hooks", "EarlyHooking", GetBoolValue(Instance()->EarlyHooking.value_for_config()).c_str());
         ini.SetValue("Hooks", "UseNtdllHooks", GetBoolValue(Instance()->UseNtdllHooks.value_for_config()).c_str());
+        ini.SetValue("Hooks", "SkipD3D11DeviceVTableHooks",
+                     GetBoolValue(Instance()->SkipD3D11DeviceVTableHooks.value_for_config()).c_str());
     }
 
     // InitFlags
