@@ -44,6 +44,8 @@ git submodule update --init --recursive
 串行选项同时限制 MSBuild 和项目内的 `/MP`，避免并行编译耗尽预编译头内存。
 产物位于 `x64/Release/a/OptiScaler.dll`，来源与 SHA-256 位于
 `build/ssmt/artifact.json`。`dirty=true` 表示构建时源码未提交，不能冒充固定提交的发布产物。
+分发时同时携带 `LICENSE`、`build/ssmt/THIRD_PARTY_NOTICES.txt` 与来源记录。
+构建入口拒绝未初始化或偏离固定提交的依赖。
 
 离线检查覆盖词条占位符、全部中文字形、语言切换后的实际控件 ID、重复按钮区分、
 字体不可用回退及 ImGui 绘制数据，不创建 D3D 设备、不启动游戏。

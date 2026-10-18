@@ -12,6 +12,10 @@ if (-not $vsRoot) { throw '未找到 MSBuild，请安装 Visual Studio C++ 桌�
 $msbuild = Join-Path $vsRoot 'MSBuild\Current\Bin\MSBuild.exe'
 $buildRoot = Join-Path $repoRoot 'build\ssmt'
 New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
+$submodules = & git -C $repoRoot submodule status --recursive
+if ($LASTEXITCODE -ne 0 -or @($submodules | Where-Object { $_ -match '^[+U-]' }).Count -ne 0) {
+    throw '依赖未初始化或偏离固定提交，请先执行 git submodule update --init --recursive。'
+}
 
 if (-not $SkipTests) {
     $tests = Join-Path $repoRoot 'build\menu-localization'
@@ -25,13 +29,17 @@ if (-not $SkipTests) {
 
 # 上游项目默认 /MP；只限制 MSBuild 项目并行数仍会同时启动大量编译器、耗尽 PCH 内存。
 $options = Join-Path $buildRoot 'single-compiler.targets'
-@'
+$optionsText = @'
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemDefinitionGroup>
     <ClCompile><MultiProcessorCompilation>false</MultiProcessorCompilation></ClCompile>
   </ItemDefinitionGroup>
 </Project>
-'@ | Set-Content -LiteralPath $options -Encoding utf8
+'@
+if (-not (Test-Path -LiteralPath $options) -or
+    (Get-Content -LiteralPath $options -Raw).Trim() -cne $optionsText.Trim()) {
+    $optionsText | Set-Content -LiteralPath $options -Encoding utf8
+}
 
 $log = Join-Path $buildRoot 'build.log'
 Push-Location $repoRoot
@@ -43,6 +51,19 @@ try {
 
 $dll = Join-Path $repoRoot "x64\$Configuration\a\OptiScaler.dll"
 if (-not (Test-Path -LiteralPath $dll)) { throw "未找到构建产物：$dll" }
+$notices = @(
+    'Licenses/RenoDX_ATTRIBUTION.txt', 'OptiScaler/include/imgui/LICENSE.txt',
+    'external/xess/LICENSE.txt', 'external/directx_agility_sdk/LICENSE.txt',
+    'external/FidelityFX-SDK/docs/license.md', 'external/FidelityFX-SDK-v2/docs/license.md',
+    'external/magic_enum/LICENSE', 'external/simpleini/LICENCE.txt',
+    'external/spdlog/LICENSE', 'external/spdlog/include/spdlog/fmt/bundled/fmt.license.rst',
+    'external/unordered_dense/LICENSE', 'external/vulkan/LICENSE.md'
+)
+$noticesText = foreach ($relative in $notices) {
+    "===== $relative ====="
+    Get-Content -LiteralPath (Join-Path $repoRoot $relative) -Raw
+}
+$noticesText -join "`n`n" | Set-Content -LiteralPath (Join-Path $buildRoot 'THIRD_PARTY_NOTICES.txt') -Encoding utf8
 $revision = (& git -C $repoRoot rev-parse HEAD).Trim()
 $dirty = [bool](& git -C $repoRoot status --porcelain)
 $manifest = [ordered]@{

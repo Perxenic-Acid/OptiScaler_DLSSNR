@@ -25,7 +25,7 @@ jobs:
           $meta = Get-Content build/ssmt/artifact.json -Raw | ConvertFrom-Json
           if ($meta.dirty) { throw '发布候选必须来自已提交的干净源码' }
           New-Item -ItemType Directory -Path build/component | Out-Null
-          Copy-Item x64/Release/a/OptiScaler.dll, LICENSE, build/ssmt/artifact.json -Destination build/component
+          Copy-Item x64/Release/a/OptiScaler.dll, LICENSE, build/ssmt/artifact.json, build/ssmt/THIRD_PARTY_NOTICES.txt -Destination build/component
           Copy-Item docs/ssmt-gimi.md -Destination build/component/README.md
           # 该目录仅包含独立组件；不运行上游向游戏目录冷部署的安装器。
       - uses: actions/upload-artifact@v4
