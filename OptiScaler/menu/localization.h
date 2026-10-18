@@ -23,7 +23,8 @@ inline bool chineseFontAvailable = false;
 inline const Entry* Find(std::string_view english)
 {
     // 初始化后仅做二分查找；面板绘制不扫描文件或分配翻译缓存。
-    static const auto index = [] {
+    static const auto index = []
+    {
         std::array<const Entry*, std::size(dictionary)> result {};
         for (size_t i = 0; i < result.size(); ++i)
             result[i] = &dictionary[i];
@@ -85,4 +86,4 @@ inline const char* Label(const char* english)
     cursor[identity.size()] = '\0';
     return buffer.data();
 }
-}
+} // namespace MenuL10n

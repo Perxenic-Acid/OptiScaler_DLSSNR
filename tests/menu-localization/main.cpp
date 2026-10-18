@@ -10,7 +10,11 @@
 static int failures = 0;
 static void Check(bool passed, const char* name)
 {
-    if (!passed) { std::fprintf(stderr, "FAIL: %s\n", name); ++failures; }
+    if (!passed)
+    {
+        std::fprintf(stderr, "FAIL: %s\n", name);
+        ++failures;
+    }
 }
 
 // 比较有序 printf 占位符，防止翻译更改 va_list 的类型或顺序。
@@ -19,11 +23,18 @@ static std::string FormatSignature(std::string_view text)
     std::string result;
     for (size_t i = 0; i < text.size(); ++i)
     {
-        if (text[i] != '%') continue;
-        if (i > 0 && text[i - 1] >= '0' && text[i - 1] <= '9') continue;
-        if (i + 1 < text.size() && text[i + 1] == '%') { ++i; continue; }
+        if (text[i] != '%')
+            continue;
+        if (i > 0 && text[i - 1] >= '0' && text[i - 1] <= '9')
+            continue;
+        if (i + 1 < text.size() && text[i + 1] == '%')
+        {
+            ++i;
+            continue;
+        }
         const auto start = i++;
-        while (i < text.size() && std::strchr("-+ #0.123456789*hljztLI", text[i])) ++i;
+        while (i < text.size() && std::strchr("-+ #0.123456789*hljztLI", text[i]))
+            ++i;
         if (i < text.size() && std::strchr("diuoxXfFeEgGaAcspn", text[i]))
             result += std::string(text.substr(start, i - start + 1)) + "|";
     }
@@ -71,8 +82,10 @@ int main()
             unsigned int c = 0;
             const int size = ImTextCharFromUtf8(&c, p, nullptr);
             Check(size > 0, "valid UTF-8");
-            if (size <= 0) break;
-            if (c >= 0x100) glyphs.insert(static_cast<ImWchar>(c));
+            if (size <= 0)
+                break;
+            if (c >= 0x100)
+                glyphs.insert(static_cast<ImWchar>(c));
             p += size;
         }
     }
@@ -120,8 +133,10 @@ int main()
         ImGui::SetNextWindowSize(ImVec2(800, 600));
         OptiMenu::Begin("Localization test");
         OptiMenu::Checkbox("Enable Neural Rendering", &checkbox);
-        if (frame == 0) checkboxId = ImGui::GetItemID();
-        else Check(checkboxId == ImGui::GetItemID(), "real widget ID across language switch");
+        if (frame == 0)
+            checkboxId = ImGui::GetItemID();
+        else
+            Check(checkboxId == ImGui::GetItemID(), "real widget ID across language switch");
         int value = 0;
         const char* items[] = { "Off", "Natural", "Cinematic" };
         OptiMenu::Combo("Style", &value, items, 3);

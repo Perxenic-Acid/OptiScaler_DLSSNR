@@ -34,15 +34,9 @@ static wchar_t const** paths;
 // decisions independent instead of using the old "defer everything" switch.
 static bool forceCustomDx11Parameters = false;
 
-static bool UsesD3D12Bridge()
-{
-    return Config::Instance()->Dx11Upscaler.value_or_default() == Upscaler::DLSS_on12;
-}
+static bool UsesD3D12Bridge() { return Config::Instance()->Dx11Upscaler.value_or_default() == Upscaler::DLSS_on12; }
 
-static bool UseCustomDx11Parameters()
-{
-    return forceCustomDx11Parameters || UsesD3D12Bridge();
-}
+static bool UseCustomDx11Parameters() { return forceCustomDx11Parameters || UsesD3D12Bridge(); }
 
 static ID3D11Device* ResolveGimiPassThroughDevice(ID3D11Device* device, bool* acquiredReference);
 
@@ -125,9 +119,8 @@ static bool TryGetNativeD3D12Parameters(NVSDK_NGX_Parameter** outParameters, Nat
     // object. Unknown keys are legal in NGX parameter tables and are needed by
     // the bridge/add-on handshake (DLSSNR.* and the resource aliases).
     InitNGXParameters(*outParameters, API::DX12);
-    SetNGXParamAllocType(*(*outParameters),
-                         request == NativeParamRequest::Persistent ? NGX_AllocTypes::NVPersistent
-                                                                     : NGX_AllocTypes::NVDynamic);
+    SetNGXParamAllocType(*(*outParameters), request == NativeParamRequest::Persistent ? NGX_AllocTypes::NVPersistent
+                                                                                      : NGX_AllocTypes::NVDynamic);
 
     LOG_INFO("D3D11 bridge using native D3D12 NGX parameters: request={} ptr={:p}", static_cast<int>(request),
              static_cast<void*>(*outParameters));
@@ -136,26 +129,23 @@ static bool TryGetNativeD3D12Parameters(NVSDK_NGX_Parameter** outParameters, Nat
 
 // Marker exposed by the bundled GIMI device wrapper. Native NGX requires the
 // device and context to be the original pair, not the wrapper identity.
-static constexpr GUID kGimiHackerDevice = {0x83ffd841,
-                                           0xa5c9,
-                                           0x46f4,
-                                           {0x81, 0x09, 0xbc, 0x25, 0x95, 0x58, 0xfe, 0xf4}};
+static constexpr GUID kGimiHackerDevice = {
+    0x83ffd841, 0xa5c9, 0x46f4, { 0x81, 0x09, 0xbc, 0x25, 0x95, 0x58, 0xfe, 0xf4 }
+};
 
 // Private ABI exported by the customized GIMI HackerContext. QueryInterface
 // returns the ID3D11DeviceContext1 trampoline that calls the saved system
 // D3D11 entry points without re-entering GIMI's process-wide context hooks.
-static constexpr GUID kGimiPassThroughContext = {0x91acfd68,
-                                                 0x5a6f,
-                                                 0x45ea,
-                                                 {0xb8, 0xd0, 0x71, 0xac, 0xc3, 0x21, 0x51, 0xb7}};
+static constexpr GUID kGimiPassThroughContext = {
+    0x91acfd68, 0x5a6f, 0x45ea, { 0xb8, 0xd0, 0x71, 0xac, 0xc3, 0x21, 0x51, 0xb7 }
+};
 
 // Private ABI exported by the matching customized GIMI HackerDevice. This is
 // needed before CreateFeature, since capability-parameter requests may already
 // need to prepare the private D3D12 interop device.
-static constexpr GUID kGimiPassThroughDevice = {0xdb17dc9a,
-                                                 0x5a5a,
-                                                 0x4ac7,
-                                                 {0xa4, 0xce, 0xef, 0x41, 0xf7, 0xc5, 0x1d, 0x5c}};
+static constexpr GUID kGimiPassThroughDevice = {
+    0xdb17dc9a, 0x5a5a, 0x4ac7, { 0xa4, 0xce, 0xef, 0x41, 0xf7, 0xc5, 0x1d, 0x5c }
+};
 
 static ID3D11Device* ResolveGimiPassThroughDevice(ID3D11Device* device, bool* acquiredReference)
 {
@@ -165,8 +155,7 @@ static ID3D11Device* ResolveGimiPassThroughDevice(ID3D11Device* device, bool* ac
         return nullptr;
 
     ID3D11Device* nativeDevice = nullptr;
-    if (SUCCEEDED(device->QueryInterface(kGimiPassThroughDevice,
-                                         reinterpret_cast<void**>(&nativeDevice))) &&
+    if (SUCCEEDED(device->QueryInterface(kGimiPassThroughDevice, reinterpret_cast<void**>(&nativeDevice))) &&
         nativeDevice != nullptr)
     {
         if (acquiredReference != nullptr)
@@ -204,8 +193,7 @@ struct NativeD3D11Context
     NativeD3D11Context(const NativeD3D11Context&) = delete;
     NativeD3D11Context& operator=(const NativeD3D11Context&) = delete;
 
-    NativeD3D11Context(NativeD3D11Context&& other) noexcept
-        : context1(other.context1), device(other.device)
+    NativeD3D11Context(NativeD3D11Context&& other) noexcept : context1(other.context1), device(other.device)
     {
         other.context1 = nullptr;
         other.device = nullptr;
@@ -249,8 +237,7 @@ static NativeD3D11Context GetNativeD3D11Context(ID3D11DeviceContext* context)
     if (context == nullptr)
         return native;
 
-    if (SUCCEEDED(context->QueryInterface(kGimiPassThroughContext,
-                                         reinterpret_cast<void**>(&native.context1))) &&
+    if (SUCCEEDED(context->QueryInterface(kGimiPassThroughContext, reinterpret_cast<void**>(&native.context1))) &&
         native.context1 != nullptr)
     {
         native.context1->GetDevice(&native.device);
@@ -588,8 +575,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(
     if (Config::Instance()->UseGenericAppIdWithDlss.value_or_default())
         projectId = project_id_override;
 
-    LOG_INFO("D3D11 with_ProjectID entry: skipInit={} dlssEnabled={} bridge={} ngxModule={:p}",
-             _skipInit, Config::Instance()->DLSSEnabled.value_or_default(), UsesD3D12Bridge(),
+    LOG_INFO("D3D11 with_ProjectID entry: skipInit={} dlssEnabled={} bridge={} ngxModule={:p}", _skipInit,
+             Config::Instance()->DLSSEnabled.value_or_default(), UsesD3D12Bridge(),
              static_cast<void*>(NVNGXProxy::NVNGXModule()));
 
     if (Config::Instance()->DLSSEnabled.value_or_default() && !_skipInit)
@@ -616,21 +603,20 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(
         }
         else if (NVNGXProxy::NVNGXModule() != nullptr && NVNGXProxy::D3D11_Init_ProjectID() != nullptr)
         {
-            const auto nativeResult = NVNGXProxy::D3D11_Init_ProjectID()(
-                projectId, InEngineType, InEngineVersion, InApplicationDataPath, nativeInitDevice, InSDKVersion,
-                &localFeatureInfo);
-            LOG_INFO("calling NVNGXProxy::D3D11_Init_ProjectID from with_ProjectID result: {0:X}; custom bridge parameters: {1}",
+            const auto nativeResult =
+                NVNGXProxy::D3D11_Init_ProjectID()(projectId, InEngineType, InEngineVersion, InApplicationDataPath,
+                                                   nativeInitDevice, InSDKVersion, &localFeatureInfo);
+            LOG_INFO("calling NVNGXProxy::D3D11_Init_ProjectID from with_ProjectID result: {0:X}; custom bridge "
+                     "parameters: {1}",
                      (UINT) nativeResult, forceCustomDx11Parameters);
 
-            if (nativeResult == NVSDK_NGX_Result_Success ||
-                nativeResult == NVSDK_NGX_Result_FAIL_FeatureAlreadyExists)
+            if (nativeResult == NVSDK_NGX_Result_Success || nativeResult == NVSDK_NGX_Result_FAIL_FeatureAlreadyExists)
                 NVNGXProxy::SetDx11Inited(true);
         }
     }
 
     ScopedInitDx11 scopedInit {};
-    auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion,
-                                           &localFeatureInfo);
+    auto result = NVSDK_NGX_D3D11_Init_Ext(0x1337, InApplicationDataPath, InDevice, InSDKVersion, &localFeatureInfo);
 
     LOG_INFO("InProjectId: {0}", projectId);
     LOG_INFO("InEngineType: {0}", (int) InEngineType);
@@ -1129,8 +1115,8 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
 
     if (state.changeBackend[handleId])
     {
-        auto successfulPhase = FeatureProvider_Dx11::ChangeFeature(state.newBackend, D3D11Device, featureContext, handleId,
-                                                                   InParameters, activeContext);
+        auto successfulPhase = FeatureProvider_Dx11::ChangeFeature(state.newBackend, D3D11Device, featureContext,
+                                                                   handleId, InParameters, activeContext);
 
         evalCounter = 0;
 
@@ -1183,8 +1169,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
     auto upscaler = deviceContext->GetUpscalerType();
     if (!upscaleResult && !deviceContext->IsInited() &&
         (upscaler == Upscaler::XeSS || upscaler == Upscaler::XeSS_on12 || upscaler == Upscaler::DLSS ||
-         upscaler == Upscaler::DLSS_on12 ||
-         upscaler == Upscaler::FFX_on12))
+         upscaler == Upscaler::DLSS_on12 || upscaler == Upscaler::FFX_on12))
     {
         ImGui::InsertNotification({ ImGuiToastType::Error, 10000, "Upscaler failed to run!" });
         state.newBackend = Upscaler::FSR22;

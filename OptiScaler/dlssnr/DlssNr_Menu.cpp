@@ -158,11 +158,11 @@ void RenderMenu(Config* config, float menuResScale)
 
             if (ms.has_value())
                 OptiMenu::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running%s - %.2f ms per frame%s",
-                                   vulkan ? MenuL10n::Text(" natively on Vulkan") : "", ms.value(), runSuffix);
+                                      vulkan ? MenuL10n::Text(" natively on Vulkan") : "", ms.value(), runSuffix);
             else if (vulkan)
                 // Measured but not yet read: the first few frames are still in the query ring.
                 OptiMenu::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running natively on Vulkan - %llu frames%s",
-                                   DlssNr::FramesVk(), runSuffix);
+                                      DlssNr::FramesVk(), runSuffix);
             else
                 OptiMenu::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running.%s", runSuffix);
 
@@ -170,9 +170,9 @@ void RenderMenu(Config* config, float menuResScale)
             OptiMenu::TextDisabled("(?)");
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
                 OptiMenu::SetTooltip("The whole pass: the staging copies and the resolve as well as the"
-                                  "\nmodel. Timing only the model would flatter the number."
-                                  "\n\nCompare it against the frame time at the bottom of this window to"
-                                  "\nsee what it is costing you.");
+                                     "\nmodel. Timing only the model would flatter the number."
+                                     "\n\nCompare it against the frame time at the bottom of this window to"
+                                     "\nsee what it is costing you.");
         }
 
         ImGui::Spacing();
@@ -204,8 +204,8 @@ void RenderMenu(Config* config, float menuResScale)
 
         if (scalePercent > 100)
             OptiMenu::TextDisabled("Supersampling %.2fx: the model runs ABOVE native, then\n"
-                                "is sampled back down. Experimental, and costly -- time grows with the area.",
-                                scalePercent / 100.0f);
+                                   "is sampled back down. Experimental, and costly -- time grows with the area.",
+                                   scalePercent / 100.0f);
 
         if (scalePercent > 100)
         {
@@ -317,7 +317,7 @@ void RenderMenu(Config* config, float menuResScale)
         if (reversible < 0 || reversible > 4)
             reversible = 0;
         if (OptiMenu::Combo("Reversible proxy (experimental)", &reversible, reversibleNames,
-                         IM_ARRAYSIZE(reversibleNames)))
+                            IM_ARRAYSIZE(reversibleNames)))
             config->DlssNrReversibleMode = (uint32_t) reversible;
 
         HelpMarker("What the model is shown, and how its answer comes back."
@@ -396,9 +396,9 @@ void RenderMenu(Config* config, float menuResScale)
         OptiMenu::SeparatorText("Colour");
 
         OptiMenu::TextDisabled("The model was trained on finished, sRGB-encoded frames. The upscaler's\n"
-                            "output is not one: it is linear and open-ended. These decide how it is\n"
-                            "mapped into something the model recognises. A frame the game reports as\n"
-                            "already tone-mapped is passed over untouched and none of this applies.");
+                               "output is not one: it is linear and open-ended. These decide how it is\n"
+                               "mapped into something the model recognises. A frame the game reports as\n"
+                               "already tone-mapped is passed over untouched and none of this applies.");
 
         {
         // Logarithmic, because the useful range is not linear. A quarter to 240: the low end because
@@ -464,19 +464,18 @@ void RenderMenu(Config* config, float menuResScale)
                     OptiMenu::TextDisabled("Waiting for a frame...");
                 else if (!haveExposure)
                     OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
-                                       "This game supplies no exposure -- paper white is in use. Try "
-                                       "the scan instead.");
+                                          "This game supplies no exposure -- paper white is in use. Try "
+                                          "the scan instead.");
                 else if (vk)
                     OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
-                                       "This game supplies an exposure and it is being read.");
+                                          "This game supplies an exposure and it is being read.");
                 else if (ex.exposure > 1e-6f)
                 {
                     const float trim =
                         std::clamp(config->DlssNrWhitePointTrim.value_or_default(), 0.25f, 4.0f);
-                    OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
-                                       "Game exposure %.4f  ->  white point %.2f%s", ex.exposure,
-                                       ex.preExposure / ex.exposure * trim,
-                                       ex.offeredNow ? "" : "  (held: absent this frame)");
+                    OptiMenu::TextColored(
+                        ImVec4(0.45f, 0.8f, 0.45f, 1.0f), "Game exposure %.4f  ->  white point %.2f%s", ex.exposure,
+                        ex.preExposure / ex.exposure * trim, ex.offeredNow ? "" : "  (held: absent this frame)");
                 }
                 else
                     OptiMenu::TextDisabled("Reading the exposure...");
@@ -493,23 +492,22 @@ void RenderMenu(Config* config, float menuResScale)
 
                     if (watching == 0)
                         OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
-                                           "Nothing in this game is shaped like an exposure.");
+                                              "Nothing in this game is shaped like an exposure.");
                     else
                         OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
-                                           "Watching %u, none moving yet -- go between light and shade.",
-                                           watching);
+                                              "Watching %u, none moving yet -- go between light and shade.", watching);
                 }
                 else if (!haveAnchor)
                     OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
-                                       "Found one. Set paper white below until the picture looks "
-                                       "right, then press Anchor here.");
+                                          "Found one. Set paper white below until the picture looks "
+                                          "right, then press Anchor here.");
                 // Once anchored, the scan -> white point readout sits above the sliders below; it is
                 // not repeated up here.
             }
             else if (haveExposure)
             {
                 OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
-                                   "This game supplies an exposure -- the option above would use it.");
+                                      "This game supplies an exposure -- the option above would use it.");
             }
         }
 
@@ -582,8 +580,8 @@ void RenderMenu(Config* config, float menuResScale)
                         config->DlssNrScanTrim.value_or_default());
 
                     OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
-                                       "Scan %.5f  ->  white point %.2f   (%u point%s)", liveScan, w,
-                                       (unsigned) anchors.size(), anchors.size() == 1 ? "" : "s");
+                                          "Scan %.5f  ->  white point %.2f   (%u point%s)", liveScan, w,
+                                          (unsigned) anchors.size(), anchors.size() == 1 ? "" : "s");
                 }
             }
 
@@ -631,7 +629,7 @@ void RenderMenu(Config* config, float menuResScale)
                 float trim = config->DlssNrScanTrim.value_or_default();
 
                 if (OptiMenu::SliderFloat("Trim (x the scan)", &trim, 0.25f, 4.0f, "%.2fx",
-                                       ImGuiSliderFlags_Logarithmic))
+                                          ImGuiSliderFlags_Logarithmic))
                     config->DlssNrScanTrim = std::clamp(trim, 0.25f, 4.0f);
 
                 ImGui::SameLine();
@@ -652,8 +650,8 @@ void RenderMenu(Config* config, float menuResScale)
             float trim = ofScan ? config->DlssNrScanTrim.value_or_default()
                                 : config->DlssNrWhitePointTrim.value_or_default();
 
-            if (OptiMenu::SliderFloat(ofScan ? "Trim (x the scan)" : "Trim (x the game's exposure)", &trim,
-                                   0.25f, 4.0f, "%.2fx", ImGuiSliderFlags_Logarithmic))
+            if (OptiMenu::SliderFloat(ofScan ? "Trim (x the scan)" : "Trim (x the game's exposure)", &trim, 0.25f, 4.0f,
+                                      "%.2fx", ImGuiSliderFlags_Logarithmic))
             {
                 if (ofScan)
                     config->DlssNrScanTrim = std::clamp(trim, 0.25f, 4.0f);
@@ -692,8 +690,7 @@ void RenderMenu(Config* config, float menuResScale)
             // of anything that can be bounded here. One tester was still improving at 100.
             float wpScale = config->DlssNrWhitePointScale.value_or_default();
 
-            if (OptiMenu::SliderFloat("Paper white", &wpScale, 0.25f, 2000.0f, "%.2fx",
-                                   ImGuiSliderFlags_Logarithmic))
+            if (OptiMenu::SliderFloat("Paper white", &wpScale, 0.25f, 2000.0f, "%.2fx", ImGuiSliderFlags_Logarithmic))
                 config->DlssNrWhitePointScale = wpScale;
 
         HelpMarker("What the frame is divided by before the model sees it. There is no other white"
@@ -838,7 +835,7 @@ void RenderMenu(Config* config, float menuResScale)
 
                 if (!isSource)
                     OptiMenu::TextDisabled("(the scan is only watching -- the white point above comes "
-                                        "from somewhere else)");
+                                           "from somewhere else)");
 
                 if (!anchors.empty())
                 {
@@ -881,8 +878,8 @@ void RenderMenu(Config* config, float menuResScale)
                         const bool sel = (int) i == selectedAnchor;
                         char row[96];
                         snprintf(row, sizeof(row), MenuL10n::Text("%s scan %.4f  ->  white %.2f%s"),
-                                 ((int) i == active && isSource) ? ">" : "  ", anchors[i].scan,
-                                 anchors[i].white, sel ? "   [editing]" : "");
+                                 ((int) i == active && isSource) ? ">" : "  ", anchors[i].scan, anchors[i].white,
+                                 sel ? "   [editing]" : "");
 
                         // Click selects the row (slider edits it); click again deselects (slider
                         // returns to the live unanchored point).
@@ -893,7 +890,7 @@ void RenderMenu(Config* config, float menuResScale)
                     }
 
                     OptiMenu::TextDisabled("Click a row to edit it with the slider above; click it again"
-                                        " to control the live point. > is the point in use now.");
+                                           " to control the live point. > is the point in use now.");
                 }
 
                 // The direction flag only means anything with a single point; with two or more the
@@ -924,9 +921,7 @@ void RenderMenu(Config* config, float menuResScale)
 
                     if (found.empty())
                     {
-                        OptiMenu::TextDisabled("%s", why != nullptr && why[0] != 0
-                                                      ? why
-                                                      : "nothing matched yet.");
+                        OptiMenu::TextDisabled("%s", why != nullptr && why[0] != 0 ? why : "nothing matched yet.");
                     }
                     else
                     {
@@ -942,10 +937,9 @@ void RenderMenu(Config* config, float menuResScale)
 
                             // Moving is the whole signal, so it is the thing that is coloured.
                             OptiMenu::TextColored(c.moves ? ImVec4(0.45f, 0.8f, 0.45f, 1.0f)
-                                                       : ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
-                                               "%zu. %s = %.5f  (seen %.5f..%.5f) %s", i + 1,
-                                               c.shape.c_str(), c.latest, c.lowest, c.highest,
-                                               c.moves ? "MOVES" : "flat so far");
+                                                          : ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
+                                                  "%zu. %s = %.5f  (seen %.5f..%.5f) %s", i + 1, c.shape.c_str(),
+                                                  c.latest, c.lowest, c.highest, c.moves ? "MOVES" : "flat so far");
                         }
 
                         OptiMenu::TextDisabled("Walk from shade into daylight. A real exposure moves.");

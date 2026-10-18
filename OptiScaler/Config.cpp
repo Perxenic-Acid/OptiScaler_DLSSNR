@@ -559,8 +559,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             HookOriginalNvngxOnly.set_from_config(readBool("Hooks", "HookOriginalNvngxOnly"));
             EarlyHooking.set_from_config(readBool("Hooks", "EarlyHooking"));
             UseNtdllHooks.set_from_config(readBool("Hooks", "UseNtdllHooks"));
-            SkipD3D11DeviceVTableHooks.set_from_config(
-                readBool("Hooks", "SkipD3D11DeviceVTableHooks"));
+            SkipD3D11DeviceVTableHooks.set_from_config(readBool("Hooks", "SkipD3D11DeviceVTableHooks"));
         }
 
         // RCAS

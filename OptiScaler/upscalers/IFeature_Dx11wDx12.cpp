@@ -17,8 +17,9 @@ namespace
 // that a command list belongs to a stable graphics queue before it allows a
 // Feature 18 dispatch.  The contract is intentionally kept local to the
 // bridge: it is not part of the public NGX ABI.
-static const GUID kDlssNrQueueAffinityGuid =
-    { 0x2f90ef4a, 0x3aa3, 0x4de5, { 0xb5, 0x27, 0x91, 0x52, 0x31, 0xe2, 0x8c, 0x6a } };
+static const GUID kDlssNrQueueAffinityGuid = {
+    0x2f90ef4a, 0x3aa3, 0x4de5, { 0xb5, 0x27, 0x91, 0x52, 0x31, 0xe2, 0x8c, 0x6a }
+};
 
 struct DlssNrQueueAffinityMarker
 {
@@ -27,8 +28,7 @@ struct DlssNrQueueAffinityMarker
     UINT32 flags;
 };
 
-static_assert(sizeof(DlssNrQueueAffinityMarker) == 0x10,
-              "The RTX30 pre-NR queue-affinity marker must remain 16 bytes");
+static_assert(sizeof(DlssNrQueueAffinityMarker) == 0x10, "The RTX30 pre-NR queue-affinity marker must remain 16 bytes");
 
 void SetDlssNrQueueAffinityMarker(ID3D12GraphicsCommandList* commandList, ID3D12CommandQueue* commandQueue)
 {
@@ -407,8 +407,7 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
     // resource to the pre-NR observer even after we had prepared a FP16
     // carrier.  Always save and restore both views, and write both views for
     // the bridge hand-off below.
-    auto getOriginalD3D12Resource = [](NVSDK_NGX_Parameter* parameters, const char* name,
-                                       ID3D12Resource** outResource)
+    auto getOriginalD3D12Resource = [](NVSDK_NGX_Parameter* parameters, const char* name, ID3D12Resource** outResource)
     {
         if (parameters == nullptr || name == nullptr || outResource == nullptr)
             return false;
@@ -565,14 +564,13 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
         {
             if (PreNrColorTransfer == nullptr)
             {
-                PreNrColorTransfer = std::make_unique<FT_Dx12>("Genshin pre-NR FP16 color transfer",
-                                                               _dx11on12Device,
+                PreNrColorTransfer = std::make_unique<FT_Dx12>("Genshin pre-NR FP16 color transfer", _dx11on12Device,
                                                                DXGI_FORMAT_R16G16B16A16_FLOAT);
             }
 
             if (!PreNrColorTransfer->IsInit() ||
                 !PreNrColorTransfer->CreateBufferResource(_dx11on12Device, carrierColor,
-                                                           D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
+                                                          D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
             {
                 LOG_ERROR("Pre-NR FP16 color resource creation failed");
                 break;
@@ -610,8 +608,7 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
         {
             if (DlssOutputTransfer == nullptr)
             {
-                DlssOutputTransfer = std::make_unique<FT_Dx12>("Genshin DLSS/NR FP16 output carrier",
-                                                               _dx11on12Device,
+                DlssOutputTransfer = std::make_unique<FT_Dx12>("Genshin DLSS/NR FP16 output carrier", _dx11on12Device,
                                                                DXGI_FORMAT_R16G16B16A16_FLOAT);
             }
 
@@ -626,9 +623,8 @@ bool IFeature_Dx11wDx12::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NG
             }();
 
             if (!DlssOutputTransfer->IsInit() ||
-                (!carrierMatchesOutput &&
-                 !DlssOutputTransfer->CreateBufferResource(_dx11on12Device, carrierOutput,
-                                                            D3D12_RESOURCE_STATE_UNORDERED_ACCESS)))
+                (!carrierMatchesOutput && !DlssOutputTransfer->CreateBufferResource(
+                                              _dx11on12Device, carrierOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS)))
             {
                 LOG_ERROR("DLSS/NR FP16 output carrier creation failed");
                 break;

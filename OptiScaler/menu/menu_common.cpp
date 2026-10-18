@@ -1438,9 +1438,9 @@ void MenuCommon::UpdateVersionAndStartupNotifications(RenderMenuContext& ctx)
 
             ImGuiToast notification { ImGuiToastType::Warning, 10000 };
             notification.setTitle(MenuL10n::Text("Late Streamline hook detected"));
-            notification.setContent(
-                MenuL10n::Text("Consider renaming OptiScaler from %s to other supported name.\nYou may experience issues otherwise."),
-                filename.c_str());
+            notification.setContent(MenuL10n::Text("Consider renaming OptiScaler from %s to other supported name.\nYou "
+                                                   "may experience issues otherwise."),
+                                    filename.c_str());
             ImGui::InsertNotification(notification);
         }
 
@@ -1540,9 +1540,9 @@ void MenuCommon::RenderSplashWindow(RenderMenuContext& ctx)
             }
 
             if (OptiMenu::Begin("Splash", nullptr,
-                             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
-                                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
-                                 ImGuiWindowFlags_NoNav))
+                                ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
+                                    ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
+                                    ImGuiWindowFlags_NoNav))
             {
                 float splashScale = 1.0f;
                 float baseScaleHeight = 720.0f;
@@ -1556,7 +1556,7 @@ void MenuCommon::RenderSplashWindow(RenderMenuContext& ctx)
                     ImGui::SetWindowFontScale(splashScale);
 
                 OptiMenu::Text("OptiScaler - %s for menu",
-                            Keybind::KeyNameFromVirtualKeyCode(config->ShortcutKey.value_or_default()).c_str());
+                               Keybind::KeyNameFromVirtualKeyCode(config->ShortcutKey.value_or_default()).c_str());
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.0f, 1.0f, 1.0f, 0.7f)), splashMessage.c_str());
 
                 splashSize = ImGui::GetWindowSize();
@@ -1781,9 +1781,9 @@ void MenuCommon::RenderPerformanceOverlay(RenderMenuContext& ctx)
         }
 
         if (OptiMenu::Begin("Performance Overlay", nullptr,
-                         ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
-                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
-                             ImGuiWindowFlags_NoNav))
+                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
+                                ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
+                                ImGuiWindowFlags_NoNav))
         {
             std::string api;
             if (IdentifyGpu::getPrimaryGpu().usesDxvk && state.api == DX11)
@@ -2251,7 +2251,7 @@ void MenuCommon::RenderMainMenuHeaderMessages(RenderMenuContext& ctx)
         {
             ImGui::Spacing();
             OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.8f, 0.f, 1.f)), "Update available: %s (current %s)",
-                               versionStatus.latestTag.c_str(), currentVersionText.c_str());
+                                  versionStatus.latestTag.c_str(), currentVersionText.c_str());
 
             if (!versionStatus.latestUrl.empty())
             {
@@ -2306,8 +2306,8 @@ void MenuCommon::RenderMainMenuHeaderMessages(RenderMenuContext& ctx)
             std::string joinedUpscalers(joined.begin(), joined.end());
 
             OptiMenu::Text("Please select %s as upscaler from game\noptions and load a save game "
-                        "to enable Opti settings.\nUpscalers don't always work in menus.",
-                        joinedUpscalers.c_str());
+                           "to enable Opti settings.\nUpscalers don't always work in menus.",
+                           joinedUpscalers.c_str());
 
             if (config->UseHQFont.value_or_default())
                 ImGui::PopFontSize();
@@ -2326,11 +2326,12 @@ void MenuCommon::RenderMainMenuHeaderMessages(RenderMenuContext& ctx)
             {
                 OptiMenu::Text("nvngx.dll: %s", state.nvngxExists ? "Exists" : "Doesn't Exist");
                 ImGui::SameLine(0.0f, 16.0f);
-                OptiMenu::Text("nvngx replacement: %s", state.nvngxReplacement.has_value() ? "Exists" : "Doesn't Exist");
+                OptiMenu::Text("nvngx replacement: %s",
+                               state.nvngxReplacement.has_value() ? "Exists" : "Doesn't Exist");
             }
 
             OptiMenu::Text("libxess: %s",
-                        (state.libxessExists || XeSSProxy::Module() != nullptr) ? "Exists" : "Doesn't Exist");
+                           (state.libxessExists || XeSSProxy::Module() != nullptr) ? "Exists" : "Doesn't Exist");
 
             OptiMenu::Text("FSR Hooks: %s", state.fsrHooks ? "Exist" : "Don't Exist");
             ImGui::SameLine(0.0f, 16.0f);
@@ -2364,7 +2365,7 @@ void MenuCommon::RenderMainMenuHeaderMessages(RenderMenuContext& ctx)
             ImGui::SetWindowFontScale(menuResScale * 3.0f);
 
         OptiMenu::Text("%s is active, but not currently used by the game\nPlease enter the game",
-                    currentFeature->Name().c_str());
+                       currentFeature->Name().c_str());
 
         if (config->UseHQFont.value_or_default())
             ImGui::PopFont();
@@ -2402,9 +2403,9 @@ void MenuCommon::RenderActiveUpscalerSettings(RenderMenuContext& ctx)
             OptiMenu::Text(primaryGpu.name.c_str());
 
             OptiMenu::Text("D3D11 %s| %s %d.%d.%d%s", primaryGpu.usesDxvk ? "(DXVK) " : "",
-                        currentFeature->ShortName().c_str(), currentFeature->Version().major,
-                        currentFeature->Version().minor, currentFeature->Version().patch,
-                        usesDx12CompatLayer ? " w/Dx12" : "");
+                           currentFeature->ShortName().c_str(), currentFeature->Version().major,
+                           currentFeature->Version().minor, currentFeature->Version().patch,
+                           usesDx12CompatLayer ? " w/Dx12" : "");
             ImGui::SameLine(0.0f, 6.0f);
             OptiMenu::Text("| Input: %s", ApiUpscalerInputName(state.currentInputApiName).c_str());
 
@@ -2421,8 +2422,8 @@ void MenuCommon::RenderActiveUpscalerSettings(RenderMenuContext& ctx)
             OptiMenu::Text(primaryGpu.name.c_str());
 
             OptiMenu::Text("D3D12 %s| %s %d.%d.%d", primaryGpu.usesDxvk ? "(DXVK) " : "",
-                        currentFeature->ShortName().c_str(), currentFeature->Version().major,
-                        currentFeature->Version().minor, currentFeature->Version().patch);
+                           currentFeature->ShortName().c_str(), currentFeature->Version().major,
+                           currentFeature->Version().minor, currentFeature->Version().patch);
             ImGui::SameLine(0.0f, 6.0f);
             OptiMenu::Text("| Input: %s", ApiUpscalerInputName(state.currentInputApiName).c_str());
 
@@ -2439,9 +2440,9 @@ void MenuCommon::RenderActiveUpscalerSettings(RenderMenuContext& ctx)
             OptiMenu::Text(primaryGpu.name.c_str());
 
             OptiMenu::Text("Vulkan %s| %s %d.%d.%d%s", primaryGpu.usesDxvk ? "(DXVK) " : "",
-                        currentFeature->ShortName().c_str(), currentFeature->Version().major,
-                        currentFeature->Version().minor, currentFeature->Version().patch,
-                        usesDx12CompatLayer ? " w/Dx12" : "");
+                           currentFeature->ShortName().c_str(), currentFeature->Version().major,
+                           currentFeature->Version().minor, currentFeature->Version().patch,
+                           usesDx12CompatLayer ? " w/Dx12" : "");
             ImGui::SameLine(0.0f, 6.0f);
             OptiMenu::Text("| Input: %s", ApiUpscalerInputName(state.currentInputApiName).c_str());
 
@@ -2498,7 +2499,8 @@ void MenuCommon::RenderActiveUpscalerSettings(RenderMenuContext& ctx)
         if (primaryGpu.dlssCapable && !state.NVNGX_DLSS_Path.has_value())
         {
             ImGui::Spacing();
-            OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.8f, 0.f, 1.f)), "nvngx_dlss.dll not found, DLSS disabled!");
+            OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.8f, 0.f, 1.f)),
+                                  "nvngx_dlss.dll not found, DLSS disabled!");
         }
     }
 
@@ -2661,7 +2663,8 @@ void MenuCommon::RenderActiveUpscalerSettings(RenderMenuContext& ctx)
                         currentColorSpace = 1;
 
                     ImGui::SetNextItemWidth(150.0f * menuResScale);
-                    if (OptiMenu::Combo("Input Color Space", &currentColorSpace, colorSpaces, IM_ARRAYSIZE(colorSpaces)))
+                    if (OptiMenu::Combo("Input Color Space", &currentColorSpace, colorSpaces,
+                                        IM_ARRAYSIZE(colorSpaces)))
                     {
                         bool isSrgb = (currentColorSpace == 2);
                         bool isPq = (currentColorSpace == 3);
@@ -3320,7 +3323,7 @@ void MenuCommon::RenderFrameGenerationSelection(RenderMenuContext& ctx)
         {
             ImGui::Spacing();
             OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.0f, 1.f)),
-                               "Save Settings and restart to apply the changes");
+                                  "Save Settings and restart to apply the changes");
             ImGui::Spacing();
         }
 
@@ -3899,13 +3902,13 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
         if (restartNeeded)
         {
             OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.8f, 0.f, 1.f)),
-                               "Restart the game to apply correct XeFG settings!");
+                                  "Restart the game to apply correct XeFG settings!");
         }
         else
         {
             if (!correctMVs)
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.f, 1.f)),
-                                   "Requires disabling dilated motion vectors");
+                                      "Requires disabling dilated motion vectors");
 
             if (!ignoreChecks && state.realExclusiveFullscreen)
             {
@@ -4476,12 +4479,12 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
         else if (state.activeFgOutput == FGOutput::FSRFG && !FfxApiProxy::IsFGReady())
         {
             OptiMenu::TextColored(toneMapColor({ 1.0f, 0.0f, 0.0f, 1.0f }),
-                               "amd_fidelityfx_dx12.dll is missing!"); // Probably never will be visible
+                                  "amd_fidelityfx_dx12.dll is missing!"); // Probably never will be visible
         }
         else if (state.activeFgOutput == FGOutput::XeFG && XeFGProxy::Module() == nullptr)
         {
             OptiMenu::TextColored(toneMapColor({ 1.0f, 0.0f, 0.0f, 1.0f }),
-                               "libxess_fg.dll is missing!"); // Probably never will be visible
+                                  "libxess_fg.dll is missing!"); // Probably never will be visible
         }
     }
 
@@ -4496,7 +4499,7 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
             if (!state.nukemsFgFileAvailable)
             {
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.f, 1.f)),
-                                   "Please put dlssg_to_fsr3_amd_is_better.dll into OptiScaler folder");
+                                      "Please put dlssg_to_fsr3_amd_is_better.dll into OptiScaler folder");
             }
         }
         else if (activeNvngxFg == FGNvngxReplacement::Arturs)
@@ -4507,11 +4510,11 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
             if (!state.artursFgFileAvailable)
             {
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.f, 1.f)),
-                                   "Please put dlss-enabler-headless.dll into OptiScaler folder");
+                                      "Please put dlss-enabler-headless.dll into OptiScaler folder");
             }
 
             OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.8f, 0.f, 1.f)),
-                               "Using a subset of features from DLSS Enabler");
+                                  "Using a subset of features from DLSS Enabler");
         }
         else if (activeNvngxFg == FGNvngxReplacement::FFX)
         {
@@ -4537,7 +4540,7 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
             else if (ReflexHooks::dlssgFrameCountToGenerate() == 0 && !dmfgActive)
             {
                 OptiMenu::Text("Please select DLSS Frame Generation in the game options\n"
-                            "You might need to select DLSS first");
+                               "You might need to select DLSS first");
             }
 
             if (state.swapchainApi == DX12)
@@ -4547,7 +4550,7 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
                 if (auto count = state.dlssgDetectedInterpolationCount; count > 0)
                 {
                     OptiMenu::TextColored(toneMapColor(ImVec4(0.f, 1.f, 0.25f, 1.f)),
-                                       std::format("ON {}x", count + 1).c_str());
+                                          std::format("ON {}x", count + 1).c_str());
                 }
                 else
                 {
@@ -4575,7 +4578,7 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
             else if (state.swapchainApi == Vulkan)
             {
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.8f, 0.f, 1.f)),
-                                   "DLSSG is purposefully disabled when this menu is visible");
+                                      "DLSSG is purposefully disabled when this menu is visible");
                 ImGui::Spacing();
             }
         }
@@ -4592,8 +4595,8 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
             {
                 auto featureVer = Nvngx_FG::version();
                 auto antighostingVer = Nvngx_FG::extraVersion();
-                OptiMenu::Text("DE Ver: %d.%d.%d.%d   GB Ver: %d.%d", featureVer.major, featureVer.minor, featureVer.patch,
-                            featureVer.reserved, antighostingVer.major, antighostingVer.minor);
+                OptiMenu::Text("DE Ver: %d.%d.%d.%d   GB Ver: %d.%d", featureVer.major, featureVer.minor,
+                               featureVer.patch, featureVer.reserved, antighostingVer.major, antighostingVer.minor);
 
                 static std::vector<FlagDefinition> common_flags = {
                     { "Antighosting (GB)", 0x00100000, "Enable anti-ghosting correction" },
@@ -4624,7 +4627,7 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
 
                 OptiMenu::Text("Raw DispatchFlags:");
                 changed |= OptiMenu::InputScalar("##RawFlags", ImGuiDataType_U32, &temp_flags, NULL, NULL, "%08X",
-                                              ImGuiInputTextFlags_CharsHexadecimal);
+                                                 ImGuiInputTextFlags_CharsHexadecimal);
 
                 ImGui::SameLine(0.0f, 20.0f * menuResScale);
                 if (bool showDebug = config->NvngxFGShowDebug.value_or_default();
@@ -4800,7 +4803,7 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
             {
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.f, 1.f)), "OFF");
                 OptiMenu::Text("Please select FSR Frame Generation in the game options\n"
-                            "You might need to select FSR first");
+                               "You might need to select FSR first");
             }
         }
 
@@ -4846,7 +4849,7 @@ void MenuCommon::RenderFrameGenerationRuntimeSettings(RenderMenuContext& ctx)
             {
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.f, 1.f)), "OFF");
                 OptiMenu::Text("Please select DLSS Frame Generation in the game options\n"
-                            "You might need to select DLSS first");
+                               "You might need to select DLSS first");
             }
         }
     }
@@ -4943,8 +4946,8 @@ void MenuCommon::RenderFsrCommonSettings(RenderMenuContext& ctx)
 
                 ImGui::SameLine(0.0f, 6.0f);
                 OptiMenu::Text("Near: %.1f Far: %.1f",
-                            state.lastFsrCameraNear < 500000.0f ? state.lastFsrCameraNear : 500000.0f,
-                            state.lastFsrCameraFar < 500000.0f ? state.lastFsrCameraFar : 500000.0f);
+                               state.lastFsrCameraNear < 500000.0f ? state.lastFsrCameraNear : 500000.0f,
+                               state.lastFsrCameraFar < 500000.0f ? state.lastFsrCameraFar : 500000.0f);
 
                 ImGui::Spacing();
                 ImGui::Spacing();
@@ -4990,8 +4993,8 @@ void MenuCommon::RenderFramerateSettings(RenderMenuContext& ctx)
             if (state.rtssReflexInjection && fakenvapiMode == LowLatencyMode::AntiLag2 &&
                 config->FGOutput.value_or_default() == FGOutput::FSRFG)
                 OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.8f, 0.f, 1.f)),
-                                   "Using RTSS Reflex injection with FSR Anti-Lag 2.0 and FSR FG "
-                                   "might cause issues");
+                                      "Using RTSS Reflex injection with FSR Anti-Lag 2.0 and FSR FG "
+                                      "might cause issues");
         }
         else
         {
@@ -5018,7 +5021,7 @@ void MenuCommon::RenderFramerateSettings(RenderMenuContext& ctx)
         if (state.reflexShowWarning)
         {
             OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.f, 1.f)),
-                               "Using Reflex's limit with FSR FG has performance overhead");
+                                  "Using Reflex's limit with FSR FG has performance overhead");
 
             ImGui::Spacing();
         }
@@ -5352,7 +5355,7 @@ void MenuCommon::RenderActiveImageSettings(RenderMenuContext& ctx)
             ImGui::SameLine(0.0f, 6.0f);
 
             if (OptiMenu::RadioButton("Depth Aware (DAS)", &sharpnessShader,
-                                   (int32_t) SharpenShader::LocalContrastDepthAware))
+                                      (int32_t) SharpenShader::LocalContrastDepthAware))
             {
                 Config::Instance()->SharpnessShader = SharpenShader::LocalContrastDepthAware;
             }
@@ -5700,12 +5703,12 @@ void MenuCommon::RenderActiveImageSettings(RenderMenuContext& ctx)
                 if (currentFeature != nullptr && !currentFeature->IsFrozen())
                 {
                     OptiMenu::Text("Output Scaling is %s, Target Res: %dx%d (%.2f)\nJitter Count: %d",
-                                config->OutputScalingEnabled.value_or_default() ? "ENABLED" : "DISABLED",
-                                (uint32_t) (currentFeature->DisplayWidth() * _ssRatio),
-                                (uint32_t) (currentFeature->DisplayHeight() * _ssRatio),
-                                ((float) currentFeature->DisplayWidth() * _ssRatio) /
-                                    (float) currentFeature->RenderWidth(),
-                                currentFeature->JitterCount());
+                                   config->OutputScalingEnabled.value_or_default() ? "ENABLED" : "DISABLED",
+                                   (uint32_t) (currentFeature->DisplayWidth() * _ssRatio),
+                                   (uint32_t) (currentFeature->DisplayHeight() * _ssRatio),
+                                   ((float) currentFeature->DisplayWidth() * _ssRatio) /
+                                       (float) currentFeature->RenderWidth(),
+                                   currentFeature->JitterCount());
                 }
 
                 ImGui::EndDisabled();
@@ -6115,7 +6118,8 @@ void MenuCommon::RenderThemeSettings(RenderMenuContext& ctx)
             MenuL10n::SelectLanguage(config->MenuLanguage.value_or_default());
         }
         if (!MenuL10n::chineseFontAvailable)
-            OptiMenu::TextWrapped("Chinese font unavailable; using English. Install a Chinese Windows font and restart.");
+            OptiMenu::TextWrapped(
+                "Chinese font unavailable; using English. Install a Chinese Windows font and restart.");
 
         bool lightTheme = config->LightTheme.value_or_default();
 
@@ -6614,7 +6618,7 @@ void MenuCommon::RenderFpsOverlaySettings(RenderMenuContext& ctx)
                            1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f };
 
         if (OptiMenu::SliderInt("Scale", &currentIndex, 0, IM_ARRAYSIZE(options) - 1, options[currentIndex],
-                             ImGuiSliderFlags_ClampOnInput))
+                                ImGuiSliderFlags_ClampOnInput))
         {
             if (currentIndex == 0)
                 config->FpsScale.reset();
@@ -6892,17 +6896,17 @@ void MenuCommon::RenderApiAndTextureSettings(RenderMenuContext& ctx)
                 if (config->MipmapBiasFixedOverride.value_or_default())
                 {
                     OptiMenu::Text("Current : %.3f / %.3f, Target: %.3f", state.lastMipBias, state.lastMipBiasMax,
-                                config->MipmapBiasOverride.value());
+                                   config->MipmapBiasOverride.value());
                 }
                 else if (config->MipmapBiasScaleOverride.value_or_default())
                 {
-                    OptiMenu::Text("Current : %.3f / %.3f, Target: Base * %.3f", state.lastMipBias, state.lastMipBiasMax,
-                                config->MipmapBiasOverride.value());
+                    OptiMenu::Text("Current : %.3f / %.3f, Target: Base * %.3f", state.lastMipBias,
+                                   state.lastMipBiasMax, config->MipmapBiasOverride.value());
                 }
                 else
                 {
-                    OptiMenu::Text("Current : %.3f / %.3f, Target: Base + %.3f", state.lastMipBias, state.lastMipBiasMax,
-                                config->MipmapBiasOverride.value());
+                    OptiMenu::Text("Current : %.3f / %.3f, Target: Base + %.3f", state.lastMipBias,
+                                   state.lastMipBiasMax, config->MipmapBiasOverride.value());
                 }
             }
             else
@@ -7158,10 +7162,10 @@ void MenuCommon::RenderMainMenuBottomBar(RenderMenuContext& ctx)
     if (currentFeature != nullptr && !currentFeature->IsFrozen())
     {
         OptiMenu::Text("%dx%d -> %dx%d (%.1f) [%dx%d (%.1f)]", currentFeature->RenderWidth(),
-                    currentFeature->RenderHeight(), currentFeature->TargetWidth(), currentFeature->TargetHeight(),
-                    (float) currentFeature->TargetWidth() / (float) currentFeature->RenderWidth(),
-                    currentFeature->DisplayWidth(), currentFeature->DisplayHeight(),
-                    (float) currentFeature->DisplayWidth() / (float) currentFeature->RenderWidth());
+                       currentFeature->RenderHeight(), currentFeature->TargetWidth(), currentFeature->TargetHeight(),
+                       (float) currentFeature->TargetWidth() / (float) currentFeature->RenderWidth(),
+                       currentFeature->DisplayWidth(), currentFeature->DisplayHeight(),
+                       (float) currentFeature->DisplayWidth() / (float) currentFeature->RenderWidth());
 
         ImGui::SameLine(0.0f, 4.0f);
 
@@ -7252,7 +7256,7 @@ void MenuCommon::RenderMainMenuBottomBar(RenderMenuContext& ctx)
     {
         ImGui::Spacing();
         OptiMenu::TextColored(toneMapColor(ImVec4(1.f, 0.f, 0.f, 1.f)),
-                           "nvngx.ini detected, please move over to using OptiScaler.ini and delete the old config");
+                              "nvngx.ini detected, please move over to using OptiScaler.ini and delete the old config");
         ImGui::Spacing();
     }
 
@@ -7481,9 +7485,9 @@ void MenuCommon::RenderHudlessResourcesWindow(RenderMenuContext& ctx, ImGuiWindo
                     ImGui::TableSetColumnIndex(0);
 
                     OptiMenu::Text("%08x, %s->%s, Count: %llu, %s", (size_t) it->first,
-                                GetSourceString(it->second.captureInfo & 0xFF).c_str(),
-                                GetDispatchString(it->second.captureInfo & 0xFF00).c_str(), it->second.usageCount,
-                                it->second.enabled ? "Active" : "Passive");
+                                   GetSourceString(it->second.captureInfo & 0xFF).c_str(),
+                                   GetDispatchString(it->second.captureInfo & 0xFF00).c_str(), it->second.usageCount,
+                                   it->second.enabled ? "Active" : "Passive");
 
                     ImGui::TableSetColumnIndex(1);
 
@@ -7691,9 +7695,9 @@ void RenderExposureScanIndicator(float alpha)
     ImGui::SetNextWindowBgAlpha(alpha);
 
     if (OptiMenu::Begin("DlssNrExposureScan", nullptr,
-                     ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
-                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
-                         ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMove))
+                        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
+                            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing |
+                            ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMove))
     {
         const float r = ImGui::GetFontSize() * 0.38f;
         const ImVec2 at = ImGui::GetCursorScreenPos();

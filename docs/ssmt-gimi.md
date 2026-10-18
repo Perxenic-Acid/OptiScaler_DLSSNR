@@ -52,3 +52,27 @@ git submodule update --init --recursive
 运行机器没有中文字体时明确报告跳过字形覆盖，仍验证英文回退和控件行为；
 不能把该情况记作中文字形已验收。
 它不能证明游戏中的 FSR2 dispatch、NR 或与 3DMigoto 的硬件共存已通过。
+
+## 持续集成与格式检查
+
+`SSMT OptiScaler component` 在 `dlss-neural-rendering` 分支推送、以该分支为目标的 PR，
+以及手动触发时编译独立 DLL，产物名为 `SSMT-OptiScaler-windows-x64`。
+该工作流只保存 Actions Artifact，不创建 Release，不把 DLL 安装到游戏目录。
+
+`Formatting Check` 只检查代码格式，不代表已执行 MSBuild。2026-10-18 回传的失败日志
+来自这一检查：上游整目录规则同时扫描了已有未格式化代码、预编译着色器数组和新改动。
+fork 改为固定 clang-format 20.1.8，使用 LLVM `git-clang-format` 检查相对已记录上游
+`973761621353b99bee3dc7d4bb27b117fef2644f` 改动的代码行；第三方头和预编译数组排除，
+独立界面测试的 C++ 源码纳入检查。没有关闭格式门禁，也不以当前 HEAD 作为新基线。
+新增字典数据由词条回归检查；同步另一套上游基线时需复核此固定祖先。
+
+本地与 CI 使用同一入口：
+
+```powershell
+python -m pip install -r scripts/requirements-format.txt
+python scripts/check-format.py
+# 显式修正当前工作区的格式，随后审阅 diff。
+python scripts/check-format.py --fix
+```
+
+格式检查缺少上游历史时会报错，CI 检出完整历史；不会静默改成只检查最近一次提交。

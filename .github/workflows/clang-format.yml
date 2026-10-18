@@ -1,14 +1,23 @@
 name: clang-format Check
-on: [push, pull_request]
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
 jobs:
   formatting-check:
     name: Formatting Check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Run clang-format style check for C/C++/Protobuf programs.
-      uses: jidicula/clang-format-action@v4.15.0
-      with:
-        clang-format-version: '20'
-        check-path: 'OptiScaler'
-        exclude-regex: 'external/|OptiScaler/include/'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装与本地一致的固定格式工具
+        run: python -m pip install -r scripts/requirements-format.txt
+      - name: 检查 fork 相对固定上游基线改动的代码行
+        run: python scripts/check-format.py

@@ -2,9 +2,17 @@ name: SSMT OptiScaler component
 
 on:
   workflow_dispatch:
+  push:
+    branches: [dlss-neural-rendering]
+  pull_request:
+    branches: [dlss-neural-rendering]
 
 permissions:
   contents: read
+
+concurrency:
+  group: ssmt-component-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

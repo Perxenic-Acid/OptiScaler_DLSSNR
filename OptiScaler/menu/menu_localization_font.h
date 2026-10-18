@@ -57,4 +57,4 @@ inline bool AddChineseFont(ImFontAtlas* atlas, float size)
     }
     return false;
 }
-}
+} // namespace MenuL10n
