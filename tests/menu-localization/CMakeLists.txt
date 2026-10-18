@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.20)
+project(OptiScalerMenuLocalization LANGUAGES CXX)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+enable_testing()
+set(imgui "${CMAKE_CURRENT_LIST_DIR}/../../OptiScaler/include/imgui")
+add_executable(menu-localization main.cpp
+    "${imgui}/imgui.cpp" "${imgui}/imgui_draw.cpp"
+    "${imgui}/imgui_tables.cpp" "${imgui}/imgui_widgets.cpp"
+    "${imgui}/misc/freetype/imgui_freetype.cpp")
+target_compile_features(menu-localization PRIVATE cxx_std_20)
+target_include_directories(menu-localization PRIVATE ../../OptiScaler/include ../../OptiScaler ../../external/freetype)
+if(MSVC)
+    target_compile_options(menu-localization PRIVATE /utf-8)
+endif()
+if(WIN32)
+    target_link_libraries(menu-localization PRIVATE user32 imm32 shell32 "${CMAKE_CURRENT_LIST_DIR}/../../external/freetype/freetype.lib")
+endif()
+add_test(NAME menu-localization COMMAND menu-localization)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+add_test(NAME menu-catalog COMMAND "${Python3_EXECUTABLE}" -X utf8 "${CMAKE_CURRENT_LIST_DIR}/catalog.py")

@@ -514,6 +514,7 @@ bool Config::Reload(std::filesystem::path iniPath)
             ExtendedLimits.set_from_config(readBool("Menu", "ExtendedLimits"));
             ShowFps.set_from_config(readBool("Menu", "ShowFps"));
             UseHQFont.set_from_config(readBool("Menu", "UseHQFont"));
+            MenuLanguage.set_from_config(readString("Menu", "Language", true));
             DisableSplash.set_from_config(readBool("Menu", "DisableSplash"));
 
             if (auto setting = readUInt("Menu", "FpsOverlayPos"); setting.has_value())
@@ -1378,6 +1379,7 @@ bool Config::SaveIni()
         ini.SetValue("Menu", "ExtendedLimits", GetBoolValue(Instance()->ExtendedLimits.value_for_config()).c_str());
         ini.SetValue("Menu", "ShowFps", GetBoolValue(Instance()->ShowFps.value_for_config()).c_str());
         ini.SetValue("Menu", "UseHQFont", GetBoolValue(Instance()->UseHQFont.value_for_config()).c_str());
+        ini.SetValue("Menu", "Language", Instance()->MenuLanguage.value_for_config_or("auto").c_str());
         ini.SetValue("Menu", "DisableSplash", GetBoolValue(Instance()->DisableSplash.value_for_config()).c_str());
 
         setting = Instance()->FGShortcutKey.value_for_config();

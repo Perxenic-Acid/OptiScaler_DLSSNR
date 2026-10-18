@@ -23,13 +23,13 @@ namespace DlssNr
 static void HelpMarker(const char* tip)
 {
     ImGui::SameLine();
-    ImGui::TextDisabled("(?)");
+    OptiMenu::TextDisabled("(?)");
 
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
         ImGui::PushTextWrapPos(ImGui::GetFontSize() * 40.0f);
-        ImGui::TextUnformatted(tip);
+        OptiMenu::TextUnformatted(tip);
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
     }
@@ -52,7 +52,7 @@ static bool DeferredSlider(const char* label, CustomOptional<float>* opt, float 
     float value = it != pending.end() ? it->second : opt->value_or_default();
     bool changed = false;
 
-    if (ImGui::SliderFloat(label, &value, mn, mx, fmt))
+    if (OptiMenu::SliderFloat(label, &value, mn, mx, fmt))
         pending[label] = value;
 
     if (ImGui::IsItemDeactivatedAfterEdit())
@@ -70,7 +70,7 @@ static bool DeferredSlider(const char* label, CustomOptional<float>* opt, float 
     ImGui::SameLine();
 
     const std::string resetId = std::string("Reset##") + label;
-    if (ImGui::SmallButton(resetId.c_str()))
+    if (OptiMenu::SmallButton(resetId.c_str()))
     {
         *opt = def;
         pending.erase(std::string(label));   // drop any in-flight drag so the reset actually sticks
@@ -91,7 +91,7 @@ void RenderMenu(Config* config, float menuResScale)
         ImGui::Spacing();
 
         bool enabled = config->DlssNrEnabled.value_or_default();
-        if (ImGui::Checkbox("Enable Neural Rendering", &enabled))
+        if (OptiMenu::Checkbox("Enable Neural Rendering", &enabled))
             config->DlssNrEnabled = enabled;
 
         HelpMarker("Synthesises detail in the upscaler's output, before frame generation sees it."
@@ -102,10 +102,10 @@ void RenderMenu(Config* config, float menuResScale)
 
         // The toggle can be bound to a key, and nobody would think to look for it under Keybinds
         // unless told. Dimmed, because it is a note rather than a setting.
-        ImGui::TextDisabled("Can be toggled with a key -- bind it under Keybinds, \"Neural Rendering\".");
+        OptiMenu::TextDisabled("Can be toggled with a key -- bind it under Keybinds, \"Neural Rendering\".");
 
         bool applyModel = config->DlssNrApplyModel.value_or_default();
-        if (ImGui::Checkbox("Apply the model", &applyModel))
+        if (OptiMenu::Checkbox("Apply the model", &applyModel))
             config->DlssNrApplyModel = applyModel;
 
         HelpMarker("Whether the model's edit is applied. Off shows the clean upscaler frame while the"
@@ -124,22 +124,22 @@ void RenderMenu(Config* config, float menuResScale)
         // moment it describes the frame before last.
         if (!enabled)
         {
-            ImGui::TextDisabled("Off. The model stays loaded, so turning this back on is immediate.");
+            OptiMenu::TextDisabled("Off. The model stays loaded, so turning this back on is immediate.");
         }
         else if (!DlssNr::IsRunning() && !vulkan)
         {
-            const char* reason = DlssNr::FailureReason();
+            const char* reason = MenuL10n::Text(DlssNr::FailureReason());
 
             if (reason[0] != 0)
             {
-                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.35f, 1.0f), "Off for this session: %s.", reason);
+                OptiMenu::TextColored(ImVec4(1.0f, 0.4f, 0.35f, 1.0f), "Off for this session: %s.", reason);
                 ImGui::SameLine();
 
-                if (ImGui::SmallButton("Retry"))
+                if (OptiMenu::SmallButton("Retry"))
                     DlssNr::RetryAfterFailure();
             }
             else if (enabled)
-                ImGui::TextUnformatted("Waiting for the upscaler to run.");
+                OptiMenu::TextUnformatted("Waiting for the upscaler to run.");
         }
         else
         {
@@ -154,22 +154,22 @@ void RenderMenu(Config* config, float menuResScale)
             // a frozen frame) -- it only outputs the clean frame. So the cost is real, and saying so
             // stops the reading looking like a bug. Enable Neural Rendering off is what zeroes it.
             const char* runSuffix =
-                !config->DlssNrApplyModel.value_or_default() ? "  (model running, edit hidden)" : "";
+                !config->DlssNrApplyModel.value_or_default() ? MenuL10n::Text("  (model running, edit hidden)") : "";
 
             if (ms.has_value())
-                ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running%s - %.2f ms per frame%s",
-                                   vulkan ? " natively on Vulkan" : "", ms.value(), runSuffix);
+                OptiMenu::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running%s - %.2f ms per frame%s",
+                                   vulkan ? MenuL10n::Text(" natively on Vulkan") : "", ms.value(), runSuffix);
             else if (vulkan)
                 // Measured but not yet read: the first few frames are still in the query ring.
-                ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running natively on Vulkan - %llu frames%s",
+                OptiMenu::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running natively on Vulkan - %llu frames%s",
                                    DlssNr::FramesVk(), runSuffix);
             else
-                ImGui::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running.%s", runSuffix);
+                OptiMenu::TextColored(ImVec4(0.4f, 0.9f, 0.5f, 1.0f), "Running.%s", runSuffix);
 
             ImGui::SameLine();
-            ImGui::TextDisabled("(?)");
+            OptiMenu::TextDisabled("(?)");
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
-                ImGui::SetTooltip("The whole pass: the staging copies and the resolve as well as the"
+                OptiMenu::SetTooltip("The whole pass: the staging copies and the resolve as well as the"
                                   "\nmodel. Timing only the model would flatter the number."
                                   "\n\nCompare it against the frame time at the bottom of this window to"
                                   "\nsee what it is costing you.");
@@ -193,7 +193,7 @@ void RenderMenu(Config* config, float menuResScale)
                                ? pendingScale
                                : (int) lroundf(config->DlssNrWorkingScale.value_or_default() * 100.0f);
 
-        if (ImGui::SliderInt("Model resolution", &scalePercent, 25, 200, "%d%%"))
+        if (OptiMenu::SliderInt("Model resolution", &scalePercent, 25, 200, "%d%%"))
             pendingScale = scalePercent;
 
         if (ImGui::IsItemDeactivatedAfterEdit() && pendingScale >= 0)
@@ -203,7 +203,7 @@ void RenderMenu(Config* config, float menuResScale)
         }
 
         if (scalePercent > 100)
-            ImGui::TextDisabled("Supersampling %.2fx: the model runs ABOVE native, then\n"
+            OptiMenu::TextDisabled("Supersampling %.2fx: the model runs ABOVE native, then\n"
                                 "is sampled back down. Experimental, and costly -- time grows with the area.",
                                 scalePercent / 100.0f);
 
@@ -215,7 +215,7 @@ void RenderMenu(Config* config, float menuResScale)
             if (ds < 0 || ds >= IM_ARRAYSIZE(dsNames))
                 ds = (int) Scaler::Lanczos3;
 
-            if (ImGui::Combo("Downscaler (NR)", &ds, dsNames, IM_ARRAYSIZE(dsNames)))
+            if (OptiMenu::Combo("Downscaler (NR)", &ds, dsNames, IM_ARRAYSIZE(dsNames)))
                 config->DlssNrScalingDownscaler = (Scaler) ds;
 
             HelpMarker("The filter that averages the model's above-native answer back to display size --"
@@ -247,7 +247,7 @@ void RenderMenu(Config* config, float menuResScale)
             static const char* enlargeNames[] = { "Classic", "Matched residual" };
             int enlarge = config->DlssNrTransfer.value_or_default() == 1 ? 1 : 0;
 
-            if (ImGui::Combo("Enlargement", &enlarge, enlargeNames, IM_ARRAYSIZE(enlargeNames)))
+            if (OptiMenu::Combo("Enlargement", &enlarge, enlargeNames, IM_ARRAYSIZE(enlargeNames)))
                 config->DlssNrTransfer = (uint32_t) enlarge;
 
             if (!reduced)
@@ -267,14 +267,14 @@ void RenderMenu(Config* config, float menuResScale)
                        "\n\nFrom hhkbble's multi-pass work on this fork.");
         }
 
-        ImGui::SeparatorText("How much of it lands");
+        OptiMenu::SeparatorText("How much of it lands");
 
         float transfer = config->DlssNrTransferStrength.value_or_default();
-        if (ImGui::SliderFloat("Detail strength", &transfer, 0.0f, 2.0f, "%.2f"))
+        if (OptiMenu::SliderFloat("Detail strength", &transfer, 0.0f, 2.0f, "%.2f"))
             config->DlssNrTransferStrength = transfer;
 
         ImGui::SameLine();
-        if (ImGui::SmallButton("Reset##detail"))
+        if (OptiMenu::SmallButton("Reset##detail"))
             config->DlssNrTransferStrength = 1.0f;
 
         HelpMarker("How far the frame moves toward the model's picture."
@@ -289,11 +289,11 @@ void RenderMenu(Config* config, float menuResScale)
                        "\nand it decides what to do with it.");
 
         float colour = config->DlssNrColourStrength.value_or_default();
-        if (ImGui::SliderFloat("Colour strength", &colour, 0.0f, 4.0f, "%.2f"))
+        if (OptiMenu::SliderFloat("Colour strength", &colour, 0.0f, 4.0f, "%.2f"))
             config->DlssNrColourStrength = colour;
 
         ImGui::SameLine();
-        if (ImGui::SmallButton("Reset##colour"))
+        if (OptiMenu::SmallButton("Reset##colour"))
             config->DlssNrColourStrength = 1.0f;
 
         HelpMarker("Whether the model's colour arrives with its light."
@@ -316,7 +316,7 @@ void RenderMenu(Config* config, float menuResScale)
         int reversible = (int) config->DlssNrReversibleMode.value_or_default();
         if (reversible < 0 || reversible > 4)
             reversible = 0;
-        if (ImGui::Combo("Reversible proxy (experimental)", &reversible, reversibleNames,
+        if (OptiMenu::Combo("Reversible proxy (experimental)", &reversible, reversibleNames,
                          IM_ARRAYSIZE(reversibleNames)))
             config->DlssNrReversibleMode = (uint32_t) reversible;
 
@@ -340,13 +340,13 @@ void RenderMenu(Config* config, float menuResScale)
                        "\nstable. If you love the Replace look but the flicker bothers you, use this."
                        "\n\nOff is byte-identical to before.");
 
-        ImGui::SeparatorText("Model");
+        OptiMenu::SeparatorText("Model");
 
-        ImGui::TextUnformatted("Read when the model is built, so a change rebuilds it after a moment.");
+        OptiMenu::TextUnformatted("Read when the model is built, so a change rebuilds it after a moment.");
 
         static const char* nrPresetNames[] = { "Default", "Preset 1", "Preset 2", "Preset 3" };
         int preset = (int) config->DlssNrPreset.value_or_default();
-        if (ImGui::Combo("Model preset", &preset, nrPresetNames, IM_ARRAYSIZE(nrPresetNames)))
+        if (OptiMenu::Combo("Model preset", &preset, nrPresetNames, IM_ARRAYSIZE(nrPresetNames)))
             config->DlssNrPreset = (uint32_t) preset;
 
         HelpMarker("Default leaves the choice to the model."
@@ -359,7 +359,7 @@ void RenderMenu(Config* config, float menuResScale)
         if (style > 2)
             style = 2;
 
-        if (ImGui::Combo("Style", &style, nrStyleNames, IM_ARRAYSIZE(nrStyleNames)))
+        if (OptiMenu::Combo("Style", &style, nrStyleNames, IM_ARRAYSIZE(nrStyleNames)))
             config->DlssNrStyle = (uint32_t) style;
 
         HelpMarker("The model's own processing profiles."
@@ -388,14 +388,14 @@ void RenderMenu(Config* config, float menuResScale)
                        "\nstrength of zero. 0 and above set skin independently of the rest of the frame.");
 
         bool autoMask = config->DlssNrAutoMask.value_or_default();
-        if (ImGui::Checkbox("Auto skin mask", &autoMask))
+        if (OptiMenu::Checkbox("Auto skin mask", &autoMask))
             config->DlssNrAutoMask = autoMask;
 
         HelpMarker("Lets the model find skin itself rather than treating the frame uniformly.");
 
-        ImGui::SeparatorText("Colour");
+        OptiMenu::SeparatorText("Colour");
 
-        ImGui::TextDisabled("The model was trained on finished, sRGB-encoded frames. The upscaler's\n"
+        OptiMenu::TextDisabled("The model was trained on finished, sRGB-encoded frames. The upscaler's\n"
                             "output is not one: it is linear and open-ended. These decide how it is\n"
                             "mapped into something the model recognises. A frame the game reports as\n"
                             "already tone-mapped is passed over untouched and none of this applies.");
@@ -434,7 +434,7 @@ void RenderMenu(Config* config, float menuResScale)
             if (source < 0 || source > 2)
                 source = 0;
 
-            if (ImGui::Combo("White point from", &source, sourceNames, IM_ARRAYSIZE(sourceNames)))
+            if (OptiMenu::Combo("White point from", &source, sourceNames, IM_ARRAYSIZE(sourceNames)))
             {
                 config->DlssNrWhitePointSource = (uint32_t) source;
 
@@ -461,25 +461,25 @@ void RenderMenu(Config* config, float menuResScale)
             if (source == 1)
             {
                 if (!vk && ex.seenFrames == 0)
-                    ImGui::TextDisabled("Waiting for a frame...");
+                    OptiMenu::TextDisabled("Waiting for a frame...");
                 else if (!haveExposure)
-                    ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
+                    OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
                                        "This game supplies no exposure -- paper white is in use. Try "
                                        "the scan instead.");
                 else if (vk)
-                    ImGui::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
+                    OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
                                        "This game supplies an exposure and it is being read.");
                 else if (ex.exposure > 1e-6f)
                 {
                     const float trim =
                         std::clamp(config->DlssNrWhitePointTrim.value_or_default(), 0.25f, 4.0f);
-                    ImGui::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
+                    OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
                                        "Game exposure %.4f  ->  white point %.2f%s", ex.exposure,
                                        ex.preExposure / ex.exposure * trim,
                                        ex.offeredNow ? "" : "  (held: absent this frame)");
                 }
                 else
-                    ImGui::TextDisabled("Reading the exposure...");
+                    OptiMenu::TextDisabled("Reading the exposure...");
             }
             else if (source == 2)
             {
@@ -492,15 +492,15 @@ void RenderMenu(Config* config, float menuResScale)
                     const unsigned int watching = (unsigned int) DlssNr::ExposureScan::Report().size();
 
                     if (watching == 0)
-                        ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
+                        OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
                                            "Nothing in this game is shaped like an exposure.");
                     else
-                        ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
+                        OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
                                            "Watching %u, none moving yet -- go between light and shade.",
                                            watching);
                 }
                 else if (!haveAnchor)
-                    ImGui::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
+                    OptiMenu::TextColored(ImVec4(0.9f, 0.6f, 0.25f, 1.0f),
                                        "Found one. Set paper white below until the picture looks "
                                        "right, then press Anchor here.");
                 // Once anchored, the scan -> white point readout sits above the sliders below; it is
@@ -508,7 +508,7 @@ void RenderMenu(Config* config, float menuResScale)
             }
             else if (haveExposure)
             {
-                ImGui::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
+                OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
                                    "This game supplies an exposure -- the option above would use it.");
             }
         }
@@ -581,7 +581,7 @@ void RenderMenu(Config* config, float menuResScale)
                         liveScan, config->DlssNrScanInverted.value_or_default(),
                         config->DlssNrScanTrim.value_or_default());
 
-                    ImGui::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
+                    OptiMenu::TextColored(ImVec4(0.45f, 0.8f, 0.45f, 1.0f),
                                        "Scan %.5f  ->  white point %.2f   (%u point%s)", liveScan, w,
                                        (unsigned) anchors.size(), anchors.size() == 1 ? "" : "s");
                 }
@@ -598,13 +598,13 @@ void RenderMenu(Config* config, float menuResScale)
                 float pw = editingRow ? anchors[selectedAnchor].white
                                       : config->DlssNrWhitePointScale.value_or_default();
 
-                char lbl[48];
+                char lbl[128];
                 if (editingRow)
-                    snprintf(lbl, sizeof(lbl), "Paper white (editing point %d)", selectedAnchor + 1);
+                    snprintf(lbl, sizeof(lbl), MenuL10n::Text("Paper white (editing point %d)"), selectedAnchor + 1);
                 else
-                    snprintf(lbl, sizeof(lbl), "Paper white");
+                    snprintf(lbl, sizeof(lbl), "%s", MenuL10n::Text("Paper white"));
 
-                if (ImGui::SliderFloat(lbl, &pw, 0.25f, 2000.0f, "%.2fx", ImGuiSliderFlags_Logarithmic))
+                if (OptiMenu::SliderFloat(lbl, &pw, 0.25f, 2000.0f, "%.2fx", ImGuiSliderFlags_Logarithmic))
                 {
                     if (editingRow)
                     {
@@ -630,13 +630,13 @@ void RenderMenu(Config* config, float menuResScale)
             {
                 float trim = config->DlssNrScanTrim.value_or_default();
 
-                if (ImGui::SliderFloat("Trim (x the scan)", &trim, 0.25f, 4.0f, "%.2fx",
+                if (OptiMenu::SliderFloat("Trim (x the scan)", &trim, 0.25f, 4.0f, "%.2fx",
                                        ImGuiSliderFlags_Logarithmic))
                     config->DlssNrScanTrim = std::clamp(trim, 0.25f, 4.0f);
 
                 ImGui::SameLine();
 
-                if (ImGui::SmallButton("Reset##scantrim"))
+                if (OptiMenu::SmallButton("Reset##scantrim"))
                     config->DlssNrScanTrim = 1.0f;
 
                 HelpMarker("A multiplier on the scan's white point, and the control you adjust between"
@@ -652,7 +652,7 @@ void RenderMenu(Config* config, float menuResScale)
             float trim = ofScan ? config->DlssNrScanTrim.value_or_default()
                                 : config->DlssNrWhitePointTrim.value_or_default();
 
-            if (ImGui::SliderFloat(ofScan ? "Trim (x the scan)" : "Trim (x the game's exposure)", &trim,
+            if (OptiMenu::SliderFloat(ofScan ? "Trim (x the scan)" : "Trim (x the game's exposure)", &trim,
                                    0.25f, 4.0f, "%.2fx", ImGuiSliderFlags_Logarithmic))
             {
                 if (ofScan)
@@ -665,7 +665,7 @@ void RenderMenu(Config* config, float menuResScale)
 
             // Deliberately always present rather than greyed at 1. The point of it is that the safe
             // value is one click away without having to know what the safe value is.
-            if (ImGui::SmallButton("Reset##wptrim"))
+            if (OptiMenu::SmallButton("Reset##wptrim"))
             {
                 if (ofScan)
                     config->DlssNrScanTrim = 1.0f;
@@ -692,7 +692,7 @@ void RenderMenu(Config* config, float menuResScale)
             // of anything that can be bounded here. One tester was still improving at 100.
             float wpScale = config->DlssNrWhitePointScale.value_or_default();
 
-            if (ImGui::SliderFloat("Paper white", &wpScale, 0.25f, 2000.0f, "%.2fx",
+            if (OptiMenu::SliderFloat("Paper white", &wpScale, 0.25f, 2000.0f, "%.2fx",
                                    ImGuiSliderFlags_Logarithmic))
                 config->DlssNrWhitePointScale = wpScale;
 
@@ -721,11 +721,11 @@ void RenderMenu(Config* config, float menuResScale)
         // Highlight guard, directly under the white point / trim -- it bounds the model's edit and
         // belongs with the exposure controls it works alongside.
         float maxRatio = config->DlssNrMaxRatio.value_or_default();
-        if (ImGui::SliderFloat("Highlight guard", &maxRatio, 1.0f, 8.0f, "%.1fx"))
+        if (OptiMenu::SliderFloat("Highlight guard", &maxRatio, 1.0f, 8.0f, "%.1fx"))
             config->DlssNrMaxRatio = maxRatio;
 
         ImGui::SameLine();
-        if (ImGui::SmallButton("Reset##guard"))
+        if (OptiMenu::SmallButton("Reset##guard"))
             config->DlssNrMaxRatio = 2.0f;
 
         HelpMarker("The most the pass may move any pixel, as a multiple of what it already was, in"
@@ -764,7 +764,7 @@ void RenderMenu(Config* config, float menuResScale)
                 bool meter = config->DlssNrScanMeter.value_or_default();
 
                 if (config->DlssNrWhitePointSource.value_or_default() == 2 &&
-                    ImGui::Checkbox("Show the light meter on screen", &meter))
+                    OptiMenu::Checkbox("Show the light meter on screen", &meter))
                     config->DlssNrScanMeter = meter;
 
                 HelpMarker("A lamp in the corner: red for dark, green for full light, and the"
@@ -798,7 +798,7 @@ void RenderMenu(Config* config, float menuResScale)
                 // chosen source and it currently has a value to capture.
                 ImGui::BeginDisabled(live <= 0.0f || !isSource);
 
-                if (ImGui::Button("Anchor here"))
+                if (OptiMenu::Button("Anchor here"))
                 {
                     // What to capture. Before the first point, the paper white above (an absolute value
                     // with the wide range a fresh game needs). After that, the EFFECTIVE white point the
@@ -837,7 +837,7 @@ void RenderMenu(Config* config, float menuResScale)
                                "\nand the numbers are the same for everyone who takes the profile.");
 
                 if (!isSource)
-                    ImGui::TextDisabled("(the scan is only watching -- the white point above comes "
+                    OptiMenu::TextDisabled("(the scan is only watching -- the white point above comes "
                                         "from somewhere else)");
 
                 if (!anchors.empty())
@@ -864,7 +864,7 @@ void RenderMenu(Config* config, float menuResScale)
                         ImGui::PushID((int) i);
 
                         // Delete first, so its click is never swallowed by the row-wide Selectable.
-                        if (ImGui::SmallButton("x"))
+                        if (OptiMenu::SmallButton("x"))
                         {
                             DlssNr::ExposureScan::AnchorRemove((int) i);
                             config->DlssNrScanAnchors = DlssNr::ExposureScan::SerializeAnchors();
@@ -880,19 +880,19 @@ void RenderMenu(Config* config, float menuResScale)
 
                         const bool sel = (int) i == selectedAnchor;
                         char row[96];
-                        snprintf(row, sizeof(row), "%s scan %.4f  ->  white %.2f%s",
+                        snprintf(row, sizeof(row), MenuL10n::Text("%s scan %.4f  ->  white %.2f%s"),
                                  ((int) i == active && isSource) ? ">" : "  ", anchors[i].scan,
                                  anchors[i].white, sel ? "   [editing]" : "");
 
                         // Click selects the row (slider edits it); click again deselects (slider
                         // returns to the live unanchored point).
-                        if (ImGui::Selectable(row, sel))
+                        if (OptiMenu::Selectable(row, sel))
                             selectedAnchor = sel ? -1 : (int) i;
 
                         ImGui::PopID();
                     }
 
-                    ImGui::TextDisabled("Click a row to edit it with the slider above; click it again"
+                    OptiMenu::TextDisabled("Click a row to edit it with the slider above; click it again"
                                         " to control the live point. > is the point in use now.");
                 }
 
@@ -901,7 +901,7 @@ void RenderMenu(Config* config, float menuResScale)
                 if (anchors.size() == 1)
                 {
                     bool inverted = config->DlssNrScanInverted.value_or_default();
-                    if (ImGui::Checkbox("The number runs the other way", &inverted))
+                    if (OptiMenu::Checkbox("The number runs the other way", &inverted))
                         config->DlssNrScanInverted = inverted;
 
                     HelpMarker("Flip this if the picture gets worse in the direction it should be"
@@ -916,7 +916,7 @@ void RenderMenu(Config* config, float menuResScale)
                 // Everything below is read-out rather than control: what the scan is looking at and
                 // how to tell whether it found the right thing. Folded away because the two decisions
                 // that matter -- anchor, and which way the number runs -- are above it.
-                if (ImGui::TreeNode("Advanced"))
+                if (OptiMenu::TreeNode("Advanced"))
                 {
 
                     const auto found = DlssNr::ExposureScan::Report();
@@ -924,7 +924,7 @@ void RenderMenu(Config* config, float menuResScale)
 
                     if (found.empty())
                     {
-                        ImGui::TextDisabled("%s", why != nullptr && why[0] != 0
+                        OptiMenu::TextDisabled("%s", why != nullptr && why[0] != 0
                                                       ? why
                                                       : "nothing matched yet.");
                     }
@@ -936,20 +936,20 @@ void RenderMenu(Config* config, float menuResScale)
 
                             if (c.reads == 0)
                             {
-                                ImGui::TextDisabled("%zu. %s -- not read yet", i + 1, c.shape.c_str());
+                                OptiMenu::TextDisabled("%zu. %s -- not read yet", i + 1, c.shape.c_str());
                                 continue;
                             }
 
                             // Moving is the whole signal, so it is the thing that is coloured.
-                            ImGui::TextColored(c.moves ? ImVec4(0.45f, 0.8f, 0.45f, 1.0f)
+                            OptiMenu::TextColored(c.moves ? ImVec4(0.45f, 0.8f, 0.45f, 1.0f)
                                                        : ImVec4(0.6f, 0.6f, 0.6f, 1.0f),
                                                "%zu. %s = %.5f  (seen %.5f..%.5f) %s", i + 1,
                                                c.shape.c_str(), c.latest, c.lowest, c.highest,
                                                c.moves ? "MOVES" : "flat so far");
                         }
 
-                        ImGui::TextDisabled("Walk from shade into daylight. A real exposure moves.");
-                        ImGui::TextDisabled("One that only ever climbs is a counter, not an exposure.");
+                        OptiMenu::TextDisabled("Walk from shade into daylight. A real exposure moves.");
+                        OptiMenu::TextDisabled("One that only ever climbs is a counter, not an exposure.");
                     }
 
                     ImGui::TreePop();
@@ -960,13 +960,13 @@ void RenderMenu(Config* config, float menuResScale)
 
         }
 
-        ImGui::SeparatorText("Compare");
+        OptiMenu::SeparatorText("Compare");
 
         // Freeze the frame the model works on, so a setting change re-renders it in place -- the only
         // clean way to A/B our own settings (a moving scene confounds every other comparison). See
         // design/frame-hold.md.
         bool held = config->DlssNrHoldFrame.value_or_default();
-        if (ImGui::Checkbox("Hold frame", &held))
+        if (OptiMenu::Checkbox("Hold frame", &held))
             config->DlssNrHoldFrame = held;
 
         HelpMarker("Freezes the frame the model works on. While held, change paper white, the"
@@ -981,7 +981,7 @@ void RenderMenu(Config* config, float menuResScale)
 
         static const char* compareNames[] = { "Off", "Side by side", "Wipe" };
         int compare = (int) config->DlssNrCompare.value_or_default();
-        if (ImGui::Combo("Compare", &compare, compareNames, IM_ARRAYSIZE(compareNames)))
+        if (OptiMenu::Combo("Compare", &compare, compareNames, IM_ARRAYSIZE(compareNames)))
             config->DlssNrCompare = (uint32_t) compare;
 
         HelpMarker("Shows the pass against itself, so the two can be seen at once rather than"
@@ -997,11 +997,11 @@ void RenderMenu(Config* config, float menuResScale)
         if (compare != 0)
         {
             bool swap = config->DlssNrCompareSwap.value_or_default();
-            if (ImGui::Checkbox("Swap sides", &swap))
+            if (OptiMenu::Checkbox("Swap sides", &swap))
                 config->DlssNrCompareSwap = swap;
 
             bool tags = config->DlssNrCompareTags.value_or_default();
-            if (ImGui::Checkbox("Label the sides", &tags))
+            if (OptiMenu::Checkbox("Label the sides", &tags))
                 config->DlssNrCompareTags = tags;
 
             HelpMarker("Writes which side is which onto the frame itself, so a screenshot still"
@@ -1013,7 +1013,7 @@ void RenderMenu(Config* config, float menuResScale)
             if (tags)
             {
                 float tagScale = config->DlssNrTagScale.value_or_default();
-                if (ImGui::SliderFloat("Label size", &tagScale, 0.5f, 5.0f, "%.1fx"))
+                if (OptiMenu::SliderFloat("Label size", &tagScale, 0.5f, 5.0f, "%.1fx"))
                     config->DlssNrTagScale = std::clamp(tagScale, 0.5f, 5.0f);
             }
 
@@ -1027,7 +1027,7 @@ void RenderMenu(Config* config, float menuResScale)
         if (compare == 1)
         {
             float zoom = config->DlssNrCompareZoom.value_or_default();
-            if (ImGui::SliderFloat("Zoom", &zoom, 1.0f, 2.0f, "%.2f"))
+            if (OptiMenu::SliderFloat("Zoom", &zoom, 1.0f, 2.0f, "%.2f"))
                 config->DlssNrCompareZoom = std::clamp(zoom, 1.0f, 2.0f);
 
             HelpMarker("How much of the frame each half shows."
@@ -1041,7 +1041,7 @@ void RenderMenu(Config* config, float menuResScale)
         if (compare == 2)
         {
             float split = config->DlssNrCompareSplit.value_or_default();
-            if (ImGui::SliderFloat("Split", &split, 0.0f, 1.0f, "%.2f"))
+            if (OptiMenu::SliderFloat("Split", &split, 0.0f, 1.0f, "%.2f"))
                 config->DlssNrCompareSplit = std::clamp(split, 0.0f, 1.0f);
 
             HelpMarker("Where the wipe cuts. Left of it is the frame as the upscaler produced it,"
@@ -1051,7 +1051,7 @@ void RenderMenu(Config* config, float menuResScale)
         static const char* debugNames[] = { "Off", "Proxy (what the model sees)", "Model output (raw)",
                                             "Difference (amplified)" };
         int debugView = (int) config->DlssNrDebugView.value_or_default();
-        if (ImGui::Combo("Debug view", &debugView, debugNames, IM_ARRAYSIZE(debugNames)))
+        if (OptiMenu::Combo("Debug view", &debugView, debugNames, IM_ARRAYSIZE(debugNames)))
             config->DlssNrDebugView = (uint32_t) debugView;
 
         HelpMarker("Proxy is the picture handed to the model -- if that looks wrong, the white point"

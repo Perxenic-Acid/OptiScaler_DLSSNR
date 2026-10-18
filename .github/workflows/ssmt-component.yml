@@ -1,0 +1,36 @@
+name: SSMT OptiScaler component
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: 编译并执行无图形设备的界面回归
+        shell: pwsh
+        run: ./scripts/build-ssmt.ps1
+      - name: 整理独立组件
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $meta = Get-Content build/ssmt/artifact.json -Raw | ConvertFrom-Json
+          if ($meta.dirty) { throw '发布候选必须来自已提交的干净源码' }
+          New-Item -ItemType Directory -Path build/component | Out-Null
+          Copy-Item x64/Release/a/OptiScaler.dll, LICENSE, build/ssmt/artifact.json -Destination build/component
+          Copy-Item docs/ssmt-gimi.md -Destination build/component/README.md
+          # 该目录仅包含独立组件；不运行上游向游戏目录冷部署的安装器。
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SSMT-OptiScaler-windows-x64
+          path: build/component/
+          if-no-files-found: error
+          retention-days: 14
