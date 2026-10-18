@@ -619,7 +619,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Init_with_ProjectID(
             const auto nativeResult = NVNGXProxy::D3D11_Init_ProjectID()(
                 projectId, InEngineType, InEngineVersion, InApplicationDataPath, nativeInitDevice, InSDKVersion,
                 &localFeatureInfo);
-            LOG_INFO("calling NVNGXProxy::D3D11_Init_ProjectID from with_ProjectID result: {0:X}; custom bridge parameters: {}",
+            LOG_INFO("calling NVNGXProxy::D3D11_Init_ProjectID from with_ProjectID result: {0:X}; custom bridge parameters: {1}",
                      (UINT) nativeResult, forceCustomDx11Parameters);
 
             if (nativeResult == NVSDK_NGX_Result_Success ||
